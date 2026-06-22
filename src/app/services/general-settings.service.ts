@@ -18,6 +18,8 @@ export type SocialMediaLink = {
 export type GeneralSettings = {
   mainLogo: string;
   mainColor: string;
+  currencyCode: string;
+  freeShippingMinimumAmount: number;
   storeLocations: StoreLocation[];
   socialMediaLinks: SocialMediaLink[];
 };
@@ -25,6 +27,8 @@ export type GeneralSettings = {
 const DEFAULT_SETTINGS: GeneralSettings = {
   mainLogo: '',
   mainColor: '#F2D200',
+  currencyCode: 'EGP',
+  freeShippingMinimumAmount: 0,
   storeLocations: [],
   socialMediaLinks: []
 };
@@ -87,6 +91,8 @@ export class GeneralSettingsService {
     return {
       mainLogo: this.readString(value['mainLogo']),
       mainColor: this.validColor(this.readString(value['mainColor'])),
+      currencyCode: this.readString(value['currencyCode']) || DEFAULT_SETTINGS.currencyCode,
+      freeShippingMinimumAmount: this.readNonNegativeNumber(value['freeShippingMinimumAmount']),
       storeLocations: this.readArray(value['storeLocations'])
         .map((entry) => {
           const item = this.asRecord(entry);
@@ -117,6 +123,11 @@ export class GeneralSettingsService {
 
   private readString(value: unknown): string {
     return typeof value === 'string' ? value.trim() : '';
+  }
+
+  private readNonNegativeNumber(value: unknown): number {
+    const number = Number(value);
+    return Number.isFinite(number) && number >= 0 ? number : 0;
   }
 
   private asRecord(value: unknown): Record<string, unknown> {

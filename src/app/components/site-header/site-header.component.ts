@@ -14,7 +14,9 @@ export class SiteHeaderComponent {
   protected readonly cart = inject(CartService);
   protected readonly generalSettings = inject(GeneralSettingsService);
   protected readonly drawerOpen = signal(false);
-  protected readonly freeShippingTarget = 1000;
+  protected readonly freeShippingTarget = computed(
+    () => this.generalSettings.settings().freeShippingMinimumAmount
+  );
 
   @Input() searchPlaceholder = 'بحث عن رقم قطعة غيار أو كلمات مفتاحية...';
   @Input() searchValue = '';
@@ -22,11 +24,12 @@ export class SiteHeaderComponent {
   @Output() searchValueChange = new EventEmitter<string>();
 
   protected readonly remainingForFreeShipping = computed(() =>
-    Math.max(0, this.freeShippingTarget - this.cart.subtotal())
+    Math.max(0, this.freeShippingTarget() - this.cart.subtotal())
   );
-  protected readonly freeShippingProgress = computed(() =>
-    Math.min(100, (this.cart.subtotal() / this.freeShippingTarget) * 100)
-  );
+  protected readonly freeShippingProgress = computed(() => {
+    const target = this.freeShippingTarget();
+    return target > 0 ? Math.min(100, (this.cart.subtotal() / target) * 100) : 0;
+  });
 
   protected openDrawer() {
     this.drawerOpen.set(true);

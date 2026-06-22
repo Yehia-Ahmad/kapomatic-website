@@ -4,7 +4,7 @@
       @if (generalSettings.settings().mainLogo) {
         <img class="h-11 w-auto max-w-40 object-contain" [src]="generalSettings.settings().mainLogo" alt="شعار المتجر" />
       } @else {
-        <span>كاروماتيك</span>
+        <span>كابوماتيك</span>
       }
     </a>
 
@@ -129,7 +129,7 @@
                         <span class="font-semibold"> {{ spec.value }}</span>
                       </div>
                     }
-                    <div class="mt-3 text-xs font-bold text-brand-700">{{ item.currency }} {{ item.price.toFixed(2) }}</div>
+                    <div class="mt-3 text-xs font-bold text-brand-700">{{ cart.currency() }} {{ item.price.toFixed(2) }}</div>
                   </div>
 
                   <button
@@ -164,6 +164,7 @@
             </div>
             <p class="text-sm text-brand-700">السعر شامل الضريبة. يتم احتساب الشحن قبل الدفع.</p>
 
+            @if (freeShippingTarget() > 0) {
             <div class="rounded-lg bg-surface-0">
               @if (remainingForFreeShipping() > 0) {
                 <div class="flex items-center gap-2 text-base font-extrabold text-brand-700">
@@ -177,9 +178,10 @@
                 </div>
               }
               <div class="mt-3 h-2 overflow-hidden rounded-full bg-line-200">
-                <div class="h-full rounded-full bg-purple-600" [style.width.%]="freeShippingProgress()"></div>
+                <div class="h-full rounded-full bg-brand-700" [style.width.%]="freeShippingProgress()"></div>
               </div>
             </div>
+            }
           </div>
         }
       </div>
@@ -188,7 +190,7 @@
         <div class="border-t border-line-200 p-5">
           <a
             routerLink="/checkout"
-            class="flex h-11 w-full items-center justify-center gap-4 rounded-lg bg-purple-700 px-4 text-sm font-extrabold text-white shadow-sm transition hover:bg-purple-800"
+            class="flex h-11 w-full items-center justify-center gap-4 rounded-lg bg-brand-700 px-4 text-sm font-extrabold text-white shadow-sm transition hover:bg-brand-900"
             (click)="closeDrawer()"
           >
             <span>الدفع</span>

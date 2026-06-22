@@ -2,6 +2,7 @@ import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterModule } from '@angular/router';
 import { EcommerceService, HomePageCategory } from '../../services/ecommerce.service';
+import { GeneralSettingsService } from '../../services/general-settings.service';
 
 @Component({
   selector: 'app-home-category-products',
@@ -12,6 +13,7 @@ import { EcommerceService, HomePageCategory } from '../../services/ecommerce.ser
 export class HomeCategoryProductsComponent {
   private readonly ecommerceService = inject(EcommerceService);
   private readonly destroyRef = inject(DestroyRef);
+  protected readonly generalSettings = inject(GeneralSettingsService);
 
   protected readonly categories = signal<HomePageCategory[]>([]);
   protected readonly loading = signal(true);

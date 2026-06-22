@@ -7,6 +7,7 @@ import { SiteHeaderComponent } from '../../components/site-header/site-header.co
 import { SiteFooterComponent } from '../../components/site-footer/site-footer.component';
 import { CartService } from '../../services/cart.service';
 import { EcommerceProduct, EcommerceService } from '../../services/ecommerce.service';
+import { GeneralSettingsService } from '../../services/general-settings.service';
 
 type TabKey = 'specs' | 'oem' | 'reviews' | 'fitment';
 
@@ -19,6 +20,7 @@ export class ProductDetailPage {
   private readonly route = inject(ActivatedRoute);
   private readonly ecommerceService = inject(EcommerceService);
   private readonly cart = inject(CartService);
+  protected readonly generalSettings = inject(GeneralSettingsService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly activeTab = signal<TabKey>('specs');

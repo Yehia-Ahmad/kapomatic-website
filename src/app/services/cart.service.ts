@@ -1,6 +1,7 @@
 import { isPlatformBrowser } from '@angular/common';
 import { Injectable, PLATFORM_ID, computed, effect, inject, signal } from '@angular/core';
 import { EcommerceProduct } from './ecommerce.service';
+import { GeneralSettingsService } from './general-settings.service';
 
 export type CartItem = {
   id: string;
@@ -18,6 +19,7 @@ export type CartItem = {
 @Injectable({ providedIn: 'root' })
 export class CartService {
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly generalSettings = inject(GeneralSettingsService);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
   private readonly storageKey = 'kapomatic-cart';
   private readonly itemsSignal = signal<CartItem[]>(this.readStoredItems());
@@ -25,7 +27,9 @@ export class CartService {
   readonly items = this.itemsSignal.asReadonly();
   readonly count = computed(() => this.items().reduce((sum, item) => sum + item.qty, 0));
   readonly subtotal = computed(() => this.items().reduce((sum, item) => sum + item.price * item.qty, 0));
-  readonly currency = computed(() => this.items()[0]?.currency || 'LE');
+  readonly currency = computed(
+    () => this.generalSettings.settings().currencyCode || this.items()[0]?.currency || 'EGP'
+  );
 
   constructor() {
     effect(() => {
@@ -53,7 +57,7 @@ export class CartService {
           title: product.title,
           subtitle: product.subTitle || product.brand,
           price: product.price || product.retailPrice,
-          currency: product.currency || 'LE',
+          currency: product.currency || this.generalSettings.settings().currencyCode || 'EGP',
           qty: quantity,
           imageSrc: product.imageSrc,
           specs: product.specs.slice(0, 2),

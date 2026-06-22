@@ -55,7 +55,7 @@
                         <p class="mt-1 truncate text-xs text-ink-500">{{ product.subTitle || product.brand }}</p>
                       }
                       <div class="mt-auto pt-3 text-base font-extrabold text-ink-900">
-                        {{ product.currency }} {{ product.retailPrice.toFixed(2) }}
+                        {{ generalSettings.settings().currencyCode }} {{ product.retailPrice.toFixed(2) }}
                       </div>
                       <span class="mt-3 inline-flex h-10 items-center justify-center rounded-xl bg-brand-600 text-sm font-extrabold transition group-hover:bg-brand-700">
                         عرض المنتج

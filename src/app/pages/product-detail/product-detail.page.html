@@ -1,4 +1,4 @@
-<div dir="rtl" class="min-h-screen bg-surface-50 text-ink-900">
+<div dir="rtl" class="flex min-h-screen flex-col bg-surface-50 text-ink-900">
   <app-site-header [showSearch]="false" />
 
   <div class="border-b border-line-200 bg-surface-0">
@@ -32,7 +32,7 @@
 
               <div class="mt-6">
                 <div class="text-3xl font-extrabold text-ink-900">
-                  {{ p.currency }} {{ p.price.toFixed(2) }}
+                  {{ generalSettings.settings().currencyCode }} {{ p.price.toFixed(2) }}
                 </div>
                 <div class="mt-2 text-sm text-ink-700">
                   <span class="font-bold" [class.text-success-700]="p.inStock" [class.text-danger-700]="!p.inStock">
@@ -213,5 +213,5 @@
       </div>
     }
   </main>
-  <app-site-footer />
+  <app-site-footer class="mt-auto" />
 </div>

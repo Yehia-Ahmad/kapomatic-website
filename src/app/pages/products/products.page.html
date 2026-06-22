@@ -1,4 +1,4 @@
-<div dir="rtl" class="min-h-screen bg-surface-50 text-ink-900">
+<div dir="rtl" class="flex min-h-screen flex-col bg-surface-50 text-ink-900">
   <app-site-header
     searchPlaceholder="البحث في المنتجات"
     [searchValue]="query()"
@@ -177,7 +177,7 @@
                     </div>
 
                     <div class="mt-3 flex items-center justify-between">
-                      <div class="text-base font-extrabold text-ink-900">{{ p.currency }} {{ p.retailPrice.toFixed(2) }}</div>
+                      <div class="text-base font-extrabold text-ink-900">{{ generalSettings.settings().currencyCode }} {{ p.retailPrice.toFixed(2) }}</div>
                       <span
                         class="rounded-full px-2 py-1 text-xs font-bold"
                         [class.bg-success-50]="p.inStock"
@@ -238,5 +238,5 @@
       </div>
     }
   </main>
-  <app-site-footer />
+  <app-site-footer class="mt-auto" />
 </div>

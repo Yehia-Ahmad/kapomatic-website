@@ -1,4 +1,4 @@
-<div dir="rtl" class="min-h-screen bg-surface-50 text-ink-900">
+<div dir="rtl" class="flex min-h-screen flex-col bg-surface-50 text-ink-900">
   <app-site-header [showSearch]="false" />
 
   <div class="border-b border-line-200 bg-surface-0">
@@ -89,14 +89,14 @@
                     @if (item.imageSrc) { <img [src]="item.imageSrc" [alt]="item.title" class="max-h-16 max-w-full object-contain" /> } @else { <i class="fa-solid fa-box-open text-ink-300"></i> }
                     <span class="absolute -left-2 -top-2 grid h-6 min-w-6 place-items-center rounded-full bg-ink-900 px-1 text-xs font-bold text-white">{{ item.qty }}</span>
                   </div>
-                  <div class="min-w-0 flex-1"><div class="line-clamp-2 text-sm font-bold">{{ item.title }}</div><div class="mt-2 text-sm font-extrabold">{{ item.currency }} {{ (item.price * item.qty).toFixed(2) }}</div></div>
+                  <div class="min-w-0 flex-1"><div class="line-clamp-2 text-sm font-bold">{{ item.title }}</div><div class="mt-2 text-sm font-extrabold">{{ cart.currency() }} {{ (item.price * item.qty).toFixed(2) }}</div></div>
                 </div>
               }
             </div>
             <div class="space-y-3 border-t border-line-200 p-5 text-sm">
               <div class="flex justify-between"><span class="text-ink-500">المجموع الفرعي</span><strong>{{ cart.currency() }} {{ cart.subtotal().toFixed(2) }}</strong></div>
               <div class="flex justify-between"><span class="text-ink-500">الشحن</span><strong>{{ selectedGovernment() ? (cart.currency() + ' ' + shippingFee().toFixed(2)) : 'يُحسب بعد اختيار المحافظة' }}</strong></div>
-              @if (selectedGovernment() && freeShippingMinimum() !== null && freeShippingMinimum()! > 0 && cart.subtotal() >= freeShippingMinimum()!) {
+              @if (selectedGovernment() && freeShippingMinimum() > 0 && cart.subtotal() >= freeShippingMinimum()) {
                 <div class="rounded-lg bg-success-50 p-2 text-xs font-bold text-success-700">طلبك مؤهل للشحن المجاني</div>
               }
               <div class="flex justify-between border-t border-line-200 pt-4 text-lg"><span class="font-extrabold">الإجمالي</span><strong>{{ cart.currency() }} {{ total().toFixed(2) }}</strong></div>
@@ -106,5 +106,5 @@
       </div>
     }
   </main>
-  <app-site-footer />
+  <app-site-footer class="mt-auto" />
 </div>

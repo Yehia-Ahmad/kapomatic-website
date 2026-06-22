@@ -8,6 +8,7 @@ import { SiteHeaderComponent } from '../../components/site-header/site-header.co
 import { SiteFooterComponent } from '../../components/site-footer/site-footer.component';
 import { CartService } from '../../services/cart.service';
 import { CheckoutService, GovernmentShipping } from '../../services/checkout.service';
+import { GeneralSettingsService } from '../../services/general-settings.service';
 
 @Component({
   standalone: true,
@@ -17,10 +18,13 @@ import { CheckoutService, GovernmentShipping } from '../../services/checkout.ser
 export class CheckoutPage {
   private readonly formBuilder = inject(FormBuilder);
   private readonly checkoutService = inject(CheckoutService);
+  protected readonly generalSettings = inject(GeneralSettingsService);
   protected readonly cart = inject(CartService);
 
   protected readonly governments = signal<GovernmentShipping[]>([]);
-  protected readonly freeShippingMinimum = signal<number | null>(null);
+  protected readonly freeShippingMinimum = computed(
+    () => this.generalSettings.settings().freeShippingMinimumAmount
+  );
   protected readonly loadingGovernments = signal(true);
   protected readonly submitting = signal(false);
   protected readonly submitted = signal(false);
@@ -49,7 +53,6 @@ export class CheckoutPage {
       .subscribe({
         next: (settings) => {
           this.governments.set(settings.governments);
-          this.freeShippingMinimum.set(settings.freeShippingMinimum);
         },
         error: () => this.errorMessage.set('تعذر تحميل المحافظات. يرجى المحاولة مرة أخرى.')
       });

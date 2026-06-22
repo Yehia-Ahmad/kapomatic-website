@@ -12,6 +12,7 @@ import {
   SpecificationFilter
 } from '../../services/ecommerce.service';
 import { WebsiteImagesService } from '../../services/website-images.service';
+import { GeneralSettingsService } from '../../services/general-settings.service';
 
 type SelectOption<T extends string> = {
   label: string;
@@ -28,6 +29,7 @@ type SortKey = 'relevance' | 'price_asc' | 'price_desc' | 'rating_desc';
 export class ProductsPage {
   private readonly ecommerceService = inject(EcommerceService);
   private readonly websiteImagesService = inject(WebsiteImagesService);
+  protected readonly generalSettings = inject(GeneralSettingsService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);

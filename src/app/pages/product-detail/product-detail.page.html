@@ -1,0 +1,217 @@
+<div dir="rtl" class="min-h-screen bg-surface-50 text-ink-900">
+  <app-site-header [showSearch]="false" />
+
+  <div class="border-b border-line-200 bg-surface-0">
+    <div class="mx-auto flex max-w-6xl items-center gap-3 px-4 py-2 text-xs text-ink-500">
+      <a class="hover:text-ink-700" routerLink="/">الرئيسية</a>
+      <span>/</span>
+      <a class="hover:text-ink-700" routerLink="/products" [queryParams]="{ categoryId: categoryId() }">المنتجات</a>
+    </div>
+  </div>
+
+  <main class="mx-auto max-w-6xl px-4 py-8">
+    @if (loading()) {
+      <div class="rounded-2xl border border-line-200 bg-surface-0 p-6 text-center text-sm font-semibold text-ink-500">
+        جاري تحميل المنتج...
+      </div>
+    } @else if (loadError()) {
+      <div class="rounded-2xl border border-danger-50 bg-surface-0 p-6 text-center text-sm font-semibold text-danger-700">
+        {{ loadError() }}
+      </div>
+    } @else if (product(); as p) {
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <section class="lg:col-span-7">
+          <div class="rounded-2xl border border-line-200 bg-surface-0 shadow-sm">
+            <div class="p-6">
+              <h1 class="text-2xl font-extrabold leading-snug sm:text-3xl">
+                {{ p.title }}
+              </h1>
+              @if (p.subTitle || p.brand) {
+                <div class="mt-1 text-lg font-bold text-ink-700">{{ p.subTitle || p.brand }}</div>
+              }
+
+              <div class="mt-6">
+                <div class="text-3xl font-extrabold text-ink-900">
+                  {{ p.currency }} {{ p.price.toFixed(2) }}
+                </div>
+                <div class="mt-2 text-sm text-ink-700">
+                  <span class="font-bold" [class.text-success-700]="p.inStock" [class.text-danger-700]="!p.inStock">
+                    {{ p.inStock ? 'متوفر في المخزون.' : 'غير متوفر حالياً.' }}
+                  </span>
+                  @if (p.shippingNote) {
+                    <span class="mx-2 text-ink-300">•</span>
+                    <span>{{ p.shippingNote }}</span>
+                  }
+                </div>
+              </div>
+
+              <div class="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-12 sm:items-end">
+                <div class="sm:col-span-4">
+                  <label class="mb-2 block text-xs font-bold text-ink-500">الكمية</label>
+                  <div class="flex h-11 items-center overflow-hidden rounded-xl border border-line-200 bg-surface-0">
+                    <button
+                      type="button"
+                      class="h-11 w-11 text-ink-700 transition hover:bg-surface-50 hover:text-ink-900"
+                      (click)="incrementQty()"
+                      aria-label="زيادة"
+                    >
+                      <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                    </button>
+                    <div class="flex-1 text-center text-sm font-extrabold">{{ quantity() }}</div>
+                    <button
+                      type="button"
+                      class="h-11 w-11 text-ink-700 transition hover:bg-surface-50 hover:text-ink-900"
+                      (click)="decrementQty()"
+                      aria-label="إنقاص"
+                    >
+                      <i class="fa-solid fa-minus" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="sm:col-span-8">
+                  <button
+                    type="button"
+                    class="h-11 w-full rounded-xl bg-brand-600 px-4 text-base font-extrabold text-ink-900 shadow-sm transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    [disabled]="!p.inStock"
+                    (click)="addToCart(p)"
+                  >
+                    أضف إلى السلة
+                  </button>
+                </div>
+              </div>
+
+              <div class="mt-8 border-t border-line-200 pt-5">
+                <div class="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    class="rounded-xl px-4 py-2 text-sm font-extrabold transition"
+                    [class.bg-surface-50]="activeTab() === 'specs'"
+                    [class.text-ink-900]="activeTab() === 'specs'"
+                    [class.text-ink-500]="activeTab() !== 'specs'"
+                    (click)="setTab('specs')"
+                  >
+                    المواصفات
+                  </button>
+                  <button
+                    type="button"
+                    class="rounded-xl px-4 py-2 text-sm font-extrabold transition"
+                    [class.bg-surface-50]="activeTab() === 'oem'"
+                    [class.text-ink-900]="activeTab() === 'oem'"
+                    [class.text-ink-500]="activeTab() !== 'oem'"
+                    (click)="setTab('oem')"
+                  >
+                    مراجع OEM
+                  </button>
+                  <button
+                    type="button"
+                    class="rounded-xl px-4 py-2 text-sm font-extrabold transition"
+                    [class.bg-surface-50]="activeTab() === 'reviews'"
+                    [class.text-ink-900]="activeTab() === 'reviews'"
+                    [class.text-ink-500]="activeTab() !== 'reviews'"
+                    (click)="setTab('reviews')"
+                  >
+                    التقييمات
+                  </button>
+                </div>
+
+                <div class="mt-5">
+                  @switch (activeTab()) {
+                    @case ('specs') {
+                      @if (p.specs.length > 0) {
+                        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                          @for (s of p.specs; track s.label + s.value) {
+                            <div class="rounded-xl border border-line-200 bg-surface-0 p-4">
+                              <div class="text-xs font-bold text-ink-500">{{ s.label }}</div>
+                              <div class="mt-1 text-sm font-extrabold">{{ s.value }}</div>
+                            </div>
+                          }
+                        </div>
+                      } @else {
+                        <div class="rounded-2xl border border-line-200 bg-surface-0 p-5 text-sm font-semibold text-ink-500">
+                          لا توجد مواصفات متاحة.
+                        </div>
+                      }
+                    }
+                    @case ('oem') {
+                      @if (p.oemRefs.length > 0) {
+                        <div class="rounded-2xl border border-line-200 bg-surface-0 p-5">
+                          <div class="text-sm font-extrabold">المراجع</div>
+                          <ul class="mt-3 space-y-2 text-sm text-ink-700">
+                            @for (ref of p.oemRefs; track ref) {
+                              <li class="flex items-start gap-2">
+                                <i class="fa-solid fa-check mt-0.5 text-success-700" aria-hidden="true"></i>
+                                <span>{{ ref }}</span>
+                              </li>
+                            }
+                          </ul>
+                        </div>
+                      } @else {
+                        <div class="rounded-2xl border border-line-200 bg-surface-0 p-5 text-sm font-semibold text-ink-500">
+                          لا توجد مراجع متاحة.
+                        </div>
+                      }
+                    }
+                    @case ('reviews') {
+                      <div class="rounded-2xl border border-line-200 bg-surface-0 p-5">
+                        <div class="text-sm font-extrabold">متوسط التقييم</div>
+                        <div class="mt-1 flex items-center gap-2">
+                          <div class="flex items-center gap-1">
+                            @for (filled of starsArray(p.rating); track $index) {
+                              <i
+                                class="fa-star text-sm"
+                                [class.fa-solid]="filled"
+                                [class.fa-regular]="!filled"
+                                [class.text-rating-500]="filled"
+                                [class.text-ink-300]="!filled"
+                                aria-hidden="true"
+                              ></i>
+                            }
+                          </div>
+                          <div class="text-sm font-extrabold">{{ p.rating.toFixed(1) }}</div>
+                          <div class="text-xs text-ink-500">({{ p.reviewsCount }} مراجعة)</div>
+                        </div>
+                      </div>
+                    }
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <aside class="lg:col-span-5">
+          <div class="rounded-2xl border border-line-200 bg-surface-0 shadow-sm">
+            <div class="p-6">
+              <div class="grid h-[320px] place-items-center rounded-2xl border border-line-200 bg-surface-0 p-4">
+                @if (activeImage(); as image) {
+                  <img class="max-h-[280px] w-auto object-contain" [src]="image.src" [alt]="image.alt" />
+                } @else {
+                  <i class="fa-solid fa-box-open text-5xl text-ink-300" aria-hidden="true"></i>
+                }
+              </div>
+
+              @if (p.images.length > 1) {
+                <div class="mt-4 grid grid-cols-3 gap-3">
+                  @for (img of p.images; track img.id) {
+                    <button
+                      type="button"
+                      class="rounded-xl border bg-surface-0 p-2 transition hover:bg-surface-50"
+                      [class.border-brand-700]="img.id === activeImageId()"
+                      [class.border-line-200]="img.id !== activeImageId()"
+                      (click)="setActiveImage(img.id)"
+                      [attr.aria-label]="'صورة ' + img.alt"
+                    >
+                      <img class="mx-auto h-14 w-auto object-contain" [src]="img.src" [alt]="img.alt" />
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        </aside>
+      </div>
+    }
+  </main>
+  <app-site-footer />
+</div>

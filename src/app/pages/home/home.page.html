@@ -1,0 +1,67 @@
+<div dir="rtl" class="relative min-h-screen pb-16 bg-surface-50 text-ink-900">
+  <app-site-header />
+
+  <!-- Breadcrumb -->
+  <div class="border-b border-line-200 bg-surface-0">
+    <div class="mx-auto flex max-w-6xl items-center gap-2 px-4 py-2 text-xs text-ink-500">
+      <span>Home</span>
+      <span class="text-ink-500">›</span>
+      <span class="text-ink-700">HomePage</span>
+    </div>
+  </div>
+
+  <app-website-targeted-images />
+
+  <!-- Categories -->
+  <section class="bg-surface-0">
+    <div class="mx-auto max-w-6xl px-4 py-10">
+      <div class="mb-6 flex items-end justify-between gap-3">
+        <div>
+          <h1 class="text-2xl font-extrabold text-ink-900 sm:text-3xl">الأقسام المتاحة</h1>
+          <div class="mt-1 text-sm text-ink-500">تصفح المنتجات المنشورة على الموقع.</div>
+        </div>
+      </div>
+
+      @if (loading()) {
+        <div class="rounded-2xl border border-line-200 bg-surface-0 p-6 text-center text-sm font-semibold text-ink-500">
+          جاري تحميل الأقسام...
+        </div>
+      } @else if (loadError()) {
+        <div class="rounded-2xl border border-danger-50 bg-surface-0 p-6 text-center text-sm font-semibold text-danger-700">
+          {{ loadError() }}
+        </div>
+      } @else if (categories().length === 0) {
+        <div class="rounded-2xl border border-line-200 bg-surface-0 p-6 text-center text-sm font-semibold text-ink-500">
+          لا توجد أقسام متاحة حالياً.
+        </div>
+      } @else {
+        <div class="grid grid-cols-2 gap-6 sm:grid-cols-4">
+          @for (category of categories(); track category.id) {
+            <a
+              [routerLink]="['/products']"
+              [queryParams]="{ categoryId: category.id }"
+            class="group flex flex-col items-center gap-3 rounded-2xl bg-surface-0 py-2 transition hover:bg-surface-50 focus:outline-none focus:ring-2 focus:ring-brand-700"
+            >
+              <div
+                class="grid h-20 w-20 place-items-center overflow-hidden rounded-full border border-brand-700 bg-brand-500 text-ink-900 shadow-sm transition group-hover:bg-brand-600"
+              >
+                @if (category.imageSrc) {
+                  <img class="h-full w-full object-cover" [src]="category.imageSrc" [alt]="category.title" />
+                } @else {
+                  <i class="fa-solid fa-box-open text-3xl" aria-hidden="true"></i>
+                }
+              </div>
+              <div class="text-center text-sm font-semibold text-ink-900">{{ category.title }}</div>
+            </a>
+          }
+        </div>
+      }
+
+      <div class="mx-auto mt-8 h-px w-full max-w-3xl bg-line-200"></div>
+    </div>
+  </section>
+
+  <app-home-category-products />
+
+  <app-site-footer />
+</div>

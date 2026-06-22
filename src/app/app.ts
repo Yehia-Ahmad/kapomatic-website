@@ -1,5 +1,6 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { GeneralSettingsService } from './services/general-settings.service';
 
 @Component({
   selector: 'app-root',
@@ -8,5 +9,9 @@ import { RouterOutlet } from '@angular/router';
   styleUrl: './app.scss'
 })
 export class App {
-  protected readonly title = signal('kapomatic-website-frontend');
+  protected readonly generalSettings = inject(GeneralSettingsService);
+
+  constructor() {
+    this.generalSettings.load();
+  }
 }

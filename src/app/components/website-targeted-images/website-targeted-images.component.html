@@ -1,0 +1,82 @@
+<section class="bg-surface-50" aria-labelledby="targeted-images-title">
+  <div class="mx-auto max-w-6xl px-4 py-8">
+    <h2 id="targeted-images-title" class="mb-5 text-2xl font-extrabold text-ink-900">العروض المختارة</h2>
+
+    @if (loading()) {
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div class="h-52 animate-pulse rounded-2xl bg-line-200"></div>
+        <div class="hidden h-52 animate-pulse rounded-2xl bg-line-200 sm:block"></div>
+      </div>
+    } @else if (loadError()) {
+      <div class="rounded-2xl border border-danger-50 bg-surface-0 p-6 text-center text-sm font-semibold text-danger-700">
+        {{ loadError() }}
+      </div>
+    } @else if (images().length === 0) {
+      <div class="rounded-2xl border border-line-200 bg-surface-0 p-6 text-center text-sm font-semibold text-ink-500">
+        لا توجد عروض متاحة حالياً.
+      </div>
+    } @else {
+      <div
+        class="relative overflow-hidden rounded-2xl bg-ink-900 shadow-sm"
+        role="region"
+        aria-roledescription="carousel"
+        aria-label="العروض المختارة"
+        (mouseenter)="stopAutoplay()"
+        (mouseleave)="startAutoplay()"
+        (focusin)="stopAutoplay()"
+        (focusout)="startAutoplay()"
+      >
+        <div
+          dir="ltr"
+          class="flex h-52 transition-transform duration-500 ease-out sm:h-64 lg:h-80"
+          [style.transform]="'translateX(-' + activeIndex() * 100 + '%)'"
+        >
+          @for (image of images(); track image.id; let index = $index) {
+            <a
+              dir="rtl"
+              class="group relative block h-full w-full shrink-0 focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white"
+              routerLink="/products"
+              [queryParams]="{ websiteImageId: image.id, targetTitle: image.title }"
+              [attr.aria-label]="image.title || 'عرض المنتجات المرتبطة'"
+              [attr.aria-hidden]="activeIndex() !== index"
+              [attr.tabindex]="activeIndex() === index ? 0 : -1"
+            >
+              <img class="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.02]" [src]="image.imageSrc" [alt]="image.title || 'عرض منتجات'" />
+              @if (image.title) {
+                <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-5 pb-7 pt-20 text-xl font-extrabold text-white">
+                  {{ image.title }}
+                </div>
+              }
+            </a>
+          }
+        </div>
+
+        @if (hasMultipleImages()) {
+          <button type="button" class="absolute right-3 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-black/50 text-white backdrop-blur transition hover:bg-black/70 focus:outline-none focus:ring-2 focus:ring-white" (click)="previous(); select(activeIndex())" aria-label="العرض السابق">
+            <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+          </button>
+          <button type="button" class="absolute left-3 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-black/50 text-white backdrop-blur transition hover:bg-black/70 focus:outline-none focus:ring-2 focus:ring-white" (click)="next(); select(activeIndex())" aria-label="العرض التالي">
+            <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+          </button>
+
+          <div class="absolute inset-x-0 bottom-3 flex justify-center gap-2" role="tablist" aria-label="اختيار العرض">
+            @for (image of images(); track image.id; let index = $index) {
+              <button
+                type="button"
+                class="h-2.5 rounded-full bg-white shadow-sm transition-all"
+                [class.w-7]="activeIndex() === index"
+                [class.w-2.5]="activeIndex() !== index"
+                [class.opacity-100]="activeIndex() === index"
+                [class.opacity-60]="activeIndex() !== index"
+                (click)="select(index)"
+                [attr.aria-label]="'الانتقال إلى العرض ' + (index + 1)"
+                [attr.aria-selected]="activeIndex() === index"
+                role="tab"
+              ></button>
+            }
+          </div>
+        }
+      </div>
+    }
+  </div>
+</section>

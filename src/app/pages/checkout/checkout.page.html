@@ -1,0 +1,110 @@
+<div dir="rtl" class="min-h-screen bg-surface-50 text-ink-900">
+  <app-site-header [showSearch]="false" />
+
+  <div class="border-b border-line-200 bg-surface-0">
+    <div class="mx-auto flex max-w-6xl items-center gap-2 px-4 py-2 text-xs text-ink-500">
+      <a routerLink="/">الرئيسية</a><span>›</span><a routerLink="/cart">سلة التسوق</a><span>›</span>
+      <span class="text-ink-700">إتمام الطلب</span>
+    </div>
+  </div>
+
+  <main class="mx-auto max-w-6xl px-4 py-8">
+    @if (submitted()) {
+      <section class="mx-auto max-w-xl rounded-2xl border border-line-200 bg-surface-0 p-8 text-center shadow-sm">
+        <div class="mx-auto grid h-16 w-16 place-items-center rounded-full bg-success-100 text-success-700">
+          <i class="fa-solid fa-check text-2xl" aria-hidden="true"></i>
+        </div>
+        <h1 class="mt-4 text-2xl font-extrabold">تم استلام طلبك بنجاح</h1>
+        <p class="mt-2 text-sm text-ink-500">سنتواصل معك لتأكيد الطلب وموعد التوصيل.</p>
+        @if (invoiceReference()) {
+          <p class="mt-4 rounded-lg bg-surface-50 p-3 text-sm">رقم الطلب: <strong>{{ invoiceReference() }}</strong></p>
+        }
+        <a routerLink="/products" class="mt-6 inline-flex rounded-xl bg-brand-600 px-6 py-3 font-extrabold hover:bg-brand-700">متابعة التسوق</a>
+      </section>
+    } @else if (cart.items().length === 0) {
+      <section class="mx-auto max-w-xl rounded-2xl border border-line-200 bg-surface-0 p-8 text-center shadow-sm">
+        <i class="fa-solid fa-cart-shopping text-3xl text-ink-300" aria-hidden="true"></i>
+        <h1 class="mt-4 text-xl font-extrabold">سلة التسوق فارغة</h1>
+        <a routerLink="/products" class="mt-5 inline-flex rounded-xl bg-brand-600 px-5 py-3 font-extrabold hover:bg-brand-700">تصفح المنتجات</a>
+      </section>
+    } @else {
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <section class="lg:col-span-7">
+          <div class="rounded-2xl border border-line-200 bg-surface-0 p-5 shadow-sm sm:p-7">
+            <h1 class="text-2xl font-extrabold">بيانات التوصيل</h1>
+            <p class="mt-1 text-sm text-ink-500">أدخل بياناتك لإتمام الطلب والدفع عند الاستلام.</p>
+
+            <form class="mt-7 space-y-5" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+              <div>
+                <label for="customerName" class="mb-2 block text-sm font-bold">الاسم بالكامل</label>
+                <input id="customerName" formControlName="customerName" autocomplete="name" class="h-12 w-full rounded-xl border bg-white px-4 outline-none transition focus:ring-2 focus:ring-brand-500" [class.border-danger-300]="invalid('customerName')" [class.border-line-200]="!invalid('customerName')" placeholder="اكتب اسمك بالكامل" />
+                @if (invalid('customerName')) { <p class="mt-1.5 text-xs text-danger-700">يرجى إدخال اسم صحيح.</p> }
+              </div>
+
+              <div>
+                <label for="customerPhone" class="mb-2 block text-sm font-bold">رقم الهاتف</label>
+                <input id="customerPhone" type="tel" formControlName="customerPhone" autocomplete="tel" dir="ltr" class="h-12 w-full rounded-xl border bg-white px-4 text-right outline-none transition focus:ring-2 focus:ring-brand-500" [class.border-danger-300]="invalid('customerPhone')" [class.border-line-200]="!invalid('customerPhone')" placeholder="01xxxxxxxxx" />
+                @if (invalid('customerPhone')) { <p class="mt-1.5 text-xs text-danger-700">يرجى إدخال رقم هاتف صحيح.</p> }
+              </div>
+
+              <div>
+                <label for="government" class="mb-2 block text-sm font-bold">المحافظة</label>
+                <select id="government" formControlName="government" class="h-12 w-full rounded-xl border bg-white px-4 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500" [class.border-danger-300]="invalid('government')" [class.border-line-200]="!invalid('government')" (change)="onGovernmentChange($any($event.target).value)">
+                  <option value="" disabled>{{ loadingGovernments() ? 'جاري تحميل المحافظات...' : 'اختر المحافظة' }}</option>
+                  @for (government of governments(); track government.name) {
+                    <option [value]="government.name">{{ government.name }}</option>
+                  }
+                </select>
+                @if (invalid('government')) { <p class="mt-1.5 text-xs text-danger-700">يرجى اختيار المحافظة.</p> }
+              </div>
+
+              <div>
+                <label for="shippingLocation" class="mb-2 block text-sm font-bold">عنوان التوصيل بالتفصيل</label>
+                <textarea id="shippingLocation" formControlName="shippingLocation" autocomplete="street-address" rows="4" class="w-full resize-none rounded-xl border bg-white px-4 py-3 outline-none transition focus:ring-2 focus:ring-brand-500" [class.border-danger-300]="invalid('shippingLocation')" [class.border-line-200]="!invalid('shippingLocation')" placeholder="المدينة، المنطقة، اسم الشارع، رقم المبنى والشقة"></textarea>
+                @if (invalid('shippingLocation')) { <p class="mt-1.5 text-xs text-danger-700">يرجى إدخال عنوان التوصيل بالتفصيل.</p> }
+              </div>
+
+              <div class="rounded-xl border-2 border-brand-500 bg-yellow-50 p-4">
+                <div class="flex items-center gap-3"><i class="fa-solid fa-money-bill-wave text-xl" aria-hidden="true"></i><div><div class="font-extrabold">الدفع عند الاستلام</div><div class="text-xs text-ink-500">ادفع قيمة الطلب عند وصوله إليك</div></div></div>
+              </div>
+
+              @if (errorMessage()) {
+                <div role="alert" class="rounded-xl border border-danger-300 bg-danger-50 p-3 text-sm font-semibold text-danger-800">{{ errorMessage() }}</div>
+              }
+
+              <button type="submit" class="h-12 w-full rounded-xl bg-brand-600 px-5 font-extrabold shadow-sm transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60" [disabled]="submitting() || loadingGovernments()">
+                @if (submitting()) { <i class="fa-solid fa-spinner fa-spin ml-2" aria-hidden="true"></i> جاري إتمام الطلب... } @else { إتمام الطلب }
+              </button>
+            </form>
+          </div>
+        </section>
+
+        <aside class="lg:col-span-5">
+          <div class="rounded-2xl border border-line-200 bg-surface-0 shadow-sm lg:sticky lg:top-5">
+            <div class="border-b border-line-200 px-5 py-4"><h2 class="text-lg font-extrabold">ملخص الطلب</h2></div>
+            <div class="max-h-80 space-y-4 overflow-y-auto p-5">
+              @for (item of cart.items(); track item.id) {
+                <div class="flex gap-3">
+                  <div class="relative grid h-20 w-20 shrink-0 place-items-center rounded-xl bg-surface-50 p-2">
+                    @if (item.imageSrc) { <img [src]="item.imageSrc" [alt]="item.title" class="max-h-16 max-w-full object-contain" /> } @else { <i class="fa-solid fa-box-open text-ink-300"></i> }
+                    <span class="absolute -left-2 -top-2 grid h-6 min-w-6 place-items-center rounded-full bg-ink-900 px-1 text-xs font-bold text-white">{{ item.qty }}</span>
+                  </div>
+                  <div class="min-w-0 flex-1"><div class="line-clamp-2 text-sm font-bold">{{ item.title }}</div><div class="mt-2 text-sm font-extrabold">{{ item.currency }} {{ (item.price * item.qty).toFixed(2) }}</div></div>
+                </div>
+              }
+            </div>
+            <div class="space-y-3 border-t border-line-200 p-5 text-sm">
+              <div class="flex justify-between"><span class="text-ink-500">المجموع الفرعي</span><strong>{{ cart.currency() }} {{ cart.subtotal().toFixed(2) }}</strong></div>
+              <div class="flex justify-between"><span class="text-ink-500">الشحن</span><strong>{{ selectedGovernment() ? (cart.currency() + ' ' + shippingFee().toFixed(2)) : 'يُحسب بعد اختيار المحافظة' }}</strong></div>
+              @if (selectedGovernment() && freeShippingMinimum() !== null && freeShippingMinimum()! > 0 && cart.subtotal() >= freeShippingMinimum()!) {
+                <div class="rounded-lg bg-success-50 p-2 text-xs font-bold text-success-700">طلبك مؤهل للشحن المجاني</div>
+              }
+              <div class="flex justify-between border-t border-line-200 pt-4 text-lg"><span class="font-extrabold">الإجمالي</span><strong>{{ cart.currency() }} {{ total().toFixed(2) }}</strong></div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    }
+  </main>
+  <app-site-footer />
+</div>

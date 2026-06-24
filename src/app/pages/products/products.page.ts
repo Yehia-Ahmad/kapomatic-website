@@ -82,9 +82,9 @@ export class ProductsPage {
     return [...filtered].sort((a, b) => {
       switch (this.sort()) {
         case 'price_asc':
-          return a.retailPrice - b.retailPrice;
+          return this.displayPrice(a) - this.displayPrice(b);
         case 'price_desc':
-          return b.retailPrice - a.retailPrice;
+          return this.displayPrice(b) - this.displayPrice(a);
         case 'rating_desc':
           return b.rating - a.rating;
         case 'relevance':
@@ -93,6 +93,10 @@ export class ProductsPage {
       }
     });
   });
+
+  private displayPrice(product: EcommerceProduct): number {
+    return product.hasDiscount ? product.priceAfterDiscount! : product.retailPrice;
+  }
 
   protected readonly totalPages = computed(() => Math.max(1, Math.ceil(this.results().length / this.pageSize())));
   protected readonly pages = computed(() => Array.from({ length: this.totalPages() }, (_, index) => index + 1));

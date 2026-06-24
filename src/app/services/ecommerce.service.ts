@@ -23,6 +23,9 @@ export type EcommerceProduct = {
   brand: string;
   price: number;
   retailPrice: number;
+  discountPercentage: number | null;
+  priceAfterDiscount: number | null;
+  hasDiscount: boolean;
   currency: string;
   rating: number;
   reviewsCount: number;
@@ -271,6 +274,9 @@ export class EcommerceService {
       brand: '',
       price: 0,
       retailPrice: 0,
+      discountPercentage: null,
+      priceAfterDiscount: null,
+      hasDiscount: false,
       currency: 'EGP',
       rating: 0,
       reviewsCount: 0,
@@ -289,6 +295,11 @@ export class EcommerceService {
     const title = this.readString(item, ['name', 'title', 'productName', 'product.name', 'product.title']);
     const images = this.readImages(item, title);
     const specs = this.readSpecs(item);
+    const price = this.readNumber(item, ['price', 'salePrice', 'retailPrice', 'regularPrice', 'ecommercePrice']);
+    const retailPrice = this.readNumber(item, ['retailPrice', 'price', 'salePrice', 'regularPrice', 'ecommercePrice']);
+    const discountPercentage = this.readOptionalNumber(item, ['discountPercentage']);
+    const priceAfterDiscount = this.readOptionalNumber(item, ['priceAfterDiscount']);
+    const hasDiscount = discountPercentage !== null && discountPercentage > 0 && priceAfterDiscount !== null;
 
     return {
       id,
@@ -298,8 +309,11 @@ export class EcommerceService {
       title: title || 'منتج',
       subTitle: this.readString(item, ['subTitle', 'subtitle', 'description', 'shortDescription']),
       brand: this.readString(item, ['brand', 'brand.name', 'manufacturer', 'manufacturer.name']),
-      price: this.readNumber(item, ['price', 'salePrice', 'retailPrice', 'regularPrice', 'ecommercePrice']),
-      retailPrice: this.readNumber(item, ['retailPrice', 'price', 'salePrice', 'regularPrice', 'ecommercePrice']),
+      price,
+      retailPrice,
+      discountPercentage,
+      priceAfterDiscount,
+      hasDiscount,
       currency: this.readString(item, ['currency', 'currencyCode']) || 'EGP',
       rating: this.readNumber(item, ['rating', 'averageRating', 'reviewsSummary.rating']),
       reviewsCount: this.readNumber(item, ['reviewsCount', 'reviewCount', 'reviewsSummary.count']),
@@ -409,6 +423,16 @@ export class EcommerceService {
       if (Number.isFinite(number)) return number;
     }
     return 0;
+  }
+
+  private readOptionalNumber(object: Record<string, unknown>, paths: string[]): number | null {
+    for (const path of paths) {
+      const value = this.readPath(object, path);
+      if (value === null || value === undefined || value === '') continue;
+      const number = typeof value === 'number' ? value : Number(value);
+      if (Number.isFinite(number)) return number;
+    }
+    return null;
   }
 
   private readBoolean(object: Record<string, unknown>, paths: string[], fallback: boolean): boolean {

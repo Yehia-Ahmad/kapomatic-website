@@ -56,7 +56,7 @@ export class CartService {
           categoryId: product.categoryId,
           title: product.title,
           subtitle: product.subTitle || product.brand,
-          price: product.price || product.retailPrice,
+          price: product.hasDiscount ? product.priceAfterDiscount! : product.price || product.retailPrice,
           currency: product.currency || this.generalSettings.settings().currencyCode || 'EGP',
           qty: quantity,
           imageSrc: product.imageSrc,

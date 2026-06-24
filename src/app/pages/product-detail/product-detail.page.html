@@ -31,9 +31,23 @@
               }
 
               <div class="mt-6">
-                <div class="text-3xl font-extrabold text-ink-900">
-                  {{ generalSettings.settings().currencyCode }} {{ p.price.toFixed(2) }}
-                </div>
+                @if (p.hasDiscount) {
+                  <div class="flex flex-wrap items-center gap-3">
+                    <span class="text-3xl font-extrabold text-danger-700">
+                      {{ generalSettings.settings().currencyCode }} {{ p.priceAfterDiscount!.toFixed(2) }}
+                    </span>
+                    <span class="rounded-full bg-danger-50 px-3 py-1 text-sm font-extrabold text-danger-700">
+                      خصم {{ p.discountPercentage }}%
+                    </span>
+                  </div>
+                  <div class="mt-1 text-base font-semibold text-ink-500 line-through">
+                    {{ generalSettings.settings().currencyCode }} {{ p.price.toFixed(2) }}
+                  </div>
+                } @else {
+                  <div class="text-3xl font-extrabold text-ink-900">
+                    {{ generalSettings.settings().currencyCode }} {{ p.price.toFixed(2) }}
+                  </div>
+                }
                 <div class="mt-2 text-sm text-ink-700">
                   <span class="font-bold" [class.text-success-700]="p.inStock" [class.text-danger-700]="!p.inStock">
                     {{ p.inStock ? 'متوفر في المخزون.' : 'غير متوفر حالياً.' }}

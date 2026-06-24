@@ -94,7 +94,9 @@ export class WebsiteImagesService {
           map((products) =>
             image.maxPrice === null
               ? products
-              : products.filter((product) => product.retailPrice <= image.maxPrice!)
+              : products.filter((product) =>
+                  (product.hasDiscount ? product.priceAfterDiscount! : product.retailPrice) <= image.maxPrice!
+                )
           )
         );
       }

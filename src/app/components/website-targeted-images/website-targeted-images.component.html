@@ -32,14 +32,10 @@
           [style.transform]="'translateX(-' + activeIndex() * 100 + '%)'"
         >
           @for (image of images(); track image.id; let index = $index) {
-            <a
+            <div
               dir="rtl"
-              class="group relative block h-full w-full shrink-0 focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white"
-              routerLink="/products"
-              [queryParams]="{ websiteImageId: image.id, targetTitle: image.title }"
-              [attr.aria-label]="image.title || 'عرض المنتجات المرتبطة'"
+              class="group relative block h-full w-full shrink-0"
               [attr.aria-hidden]="activeIndex() !== index"
-              [attr.tabindex]="activeIndex() === index ? 0 : -1"
             >
               <img class="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.02]" [src]="image.imageSrc" [alt]="image.title || 'عرض منتجات'" />
               @if (image.title) {
@@ -47,7 +43,7 @@
                   {{ image.title }}
                 </div>
               }
-            </a>
+            </div>
           }
         </div>
 

@@ -1,7 +1,5 @@
 import { isPlatformBrowser } from '@angular/common';
 import { Component, DestroyRef, OnDestroy, PLATFORM_ID, computed, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { RouterModule } from '@angular/router';
 import {
   TargetedWebsiteImage,
   WebsiteImagesService
@@ -10,7 +8,6 @@ import {
 @Component({
   selector: 'app-website-targeted-images',
   standalone: true,
-  imports: [RouterModule],
   templateUrl: './website-targeted-images.component.html'
 })
 export class WebsiteTargetedImagesComponent implements OnDestroy {

@@ -16,6 +16,7 @@ export type TargetedWebsiteImage = {
   productIds: string[];
   maxPrice: number | null;
   resolvedProducts: EcommerceProduct[];
+  viewOnly?: boolean;
 };
 
 @Injectable({ providedIn: 'root' })

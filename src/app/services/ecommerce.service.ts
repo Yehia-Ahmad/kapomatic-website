@@ -34,7 +34,6 @@ export type EcommerceProduct = {
   inStock: boolean;
   shippingNote: string;
   specs: ProductSpec[];
-  oemRefs: string[];
 };
 
 export type EcommerceCategory = {
@@ -284,8 +283,7 @@ export class EcommerceService {
       images: [],
       inStock: false,
       shippingNote: '',
-      specs: [],
-      oemRefs: []
+      specs: []
     };
   }
 
@@ -321,8 +319,7 @@ export class EcommerceService {
       images,
       inStock: this.readBoolean(item, ['inStock', 'isAvailable', 'available', 'stockStatus'], true),
       shippingNote: this.readString(item, ['shippingNote', 'deliveryNote']),
-      specs,
-      oemRefs: this.readStringArray(item, ['oemRefs', 'oemReferences', 'approvals', 'compatibilities'])
+      specs
     };
   }
 

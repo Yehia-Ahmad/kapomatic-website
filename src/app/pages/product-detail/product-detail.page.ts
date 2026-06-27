@@ -9,7 +9,7 @@ import { CartService } from '../../services/cart.service';
 import { EcommerceProduct, EcommerceService } from '../../services/ecommerce.service';
 import { GeneralSettingsService } from '../../services/general-settings.service';
 
-type TabKey = 'specs' | 'oem' | 'reviews' | 'fitment';
+type TabKey = 'specs' | 'reviews' | 'fitment';
 
 @Component({
   standalone: true,

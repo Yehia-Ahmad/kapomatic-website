@@ -24,7 +24,7 @@
       </div>
     } @else {
       <div class="grid grid-cols-1 gap-5 lg:grid-cols-12">
-        @if (!isTargetedListing()) {
+        @if (!isTargetedListing() && !isSearchListing()) {
         <aside class="lg:col-span-3">
           <div class="rounded-2xl border border-line-200 bg-surface-0 shadow-sm">
             <div class="border-b border-line-200 px-4 py-3">
@@ -90,11 +90,11 @@
         </aside>
         }
 
-        <section [class.lg:col-span-9]="!isTargetedListing()" [class.lg:col-span-12]="isTargetedListing()">
+        <section [class.lg:col-span-9]="!isTargetedListing() && !isSearchListing()" [class.lg:col-span-12]="isTargetedListing() || isSearchListing()">
           <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h1 class="text-2xl font-extrabold text-ink-900 sm:text-3xl">
-                {{ isTargetedListing() ? (targetedTitle() || 'المنتجات المرتبطة') : (selectedCategory()?.title ?? 'المنتجات') }}
+                {{ isSearchListing() ? 'نتائج البحث' : (isTargetedListing() ? (targetedTitle() || 'المنتجات المرتبطة') : (selectedCategory()?.title ?? 'المنتجات')) }}
               </h1>
               <div class="mt-1 text-xs text-ink-500">{{ productsLoading() ? 'جاري تحديث المنتجات...' : resultsLabel() }}</div>
             </div>
@@ -105,7 +105,7 @@
                 <select
                   class="h-9 appearance-none rounded-xl border border-line-200 bg-surface-0 pl-10 pr-3 text-sm text-ink-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-700"
                   [value]="sort()"
-                  (change)="sort.set($any($event.target).value); page.set(1)"
+                  (change)="updateSort($any($event.target).value)"
                 >
                   @for (opt of sortOptions; track opt.value) {
                     <option [value]="opt.value">{{ opt.label }}</option>
@@ -122,13 +122,13 @@
             <div class="mt-4 rounded-2xl border border-line-200 bg-surface-0 p-6 text-center text-sm font-semibold text-ink-500">
               جاري تحميل منتجات القسم...
             </div>
-          } @else if (pagedResults().length === 0) {
+          } @else if (visibleResults().length === 0) {
             <div class="mt-4 rounded-2xl border border-line-200 bg-surface-0 p-6 text-center text-sm font-semibold text-ink-500">
               لا توجد منتجات مطابقة.
             </div>
           } @else {
             <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              @for (p of pagedResults(); track p.id) {
+              @for (p of visibleResults(); track p.id) {
                 <article class="group relative rounded-2xl border border-line-200 bg-surface-0 shadow-sm transition hover:shadow-md">
                   <button
                     type="button"
@@ -212,44 +212,9 @@
             </div>
           }
 
-          @if (totalPages() > 1) {
-            <div class="mt-6 flex items-center justify-center gap-2">
-              <button
-                type="button"
-                class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-line-200 bg-surface-0 text-ink-700 shadow-sm transition hover:bg-surface-50 disabled:opacity-50"
-                (click)="goToPage(page() - 1)"
-                [disabled]="page() <= 1"
-                aria-label="السابق"
-              >
-                <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
-              </button>
-
-              @for (p of pages(); track p) {
-                <button
-                  type="button"
-                  class="inline-flex h-9 w-9 items-center justify-center rounded-xl border text-sm font-bold shadow-sm transition"
-                  [class.border-line-200]="page() !== p"
-                  [class.bg-surface-0]="page() !== p"
-                  [class.text-ink-700]="page() !== p"
-                  [class.hover:bg-surface-50]="page() !== p"
-                  [class.border-brand-700]="page() === p"
-                  [class.bg-brand-600]="page() === p"
-                  [class.text-ink-900]="page() === p"
-                  (click)="goToPage(p)"
-                >
-                  {{ p }}
-                </button>
-              }
-
-              <button
-                type="button"
-                class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-line-200 bg-surface-0 text-ink-700 shadow-sm transition hover:bg-surface-50 disabled:opacity-50"
-                (click)="goToPage(page() + 1)"
-                [disabled]="page() >= totalPages()"
-                aria-label="التالي"
-              >
-                <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
-              </button>
+          @if (nextPageLoading()) {
+            <div class="mt-6 rounded-2xl border border-line-200 bg-surface-0 p-4 text-center text-sm font-semibold text-ink-500">
+              جاري تحميل المزيد...
             </div>
           }
         </section>

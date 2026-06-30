@@ -60,6 +60,22 @@ export type CategoryFiltersResult = {
   products: EcommerceProduct[];
 };
 
+export type ProductPagination = {
+  page: number;
+  limit: number;
+  totalItems: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+};
+
+export type ProductPageResult = {
+  products: EcommerceProduct[];
+  pagination: ProductPagination;
+};
+
+export type ProductSortKey = 'relevance' | 'price_asc' | 'price_desc' | 'rating_desc';
+
 export type HomePageCategory = EcommerceCategory & {
   products: EcommerceProduct[];
 };
@@ -102,9 +118,32 @@ export class EcommerceService {
     categoryId: string,
     filters: SpecificationFilter[] = []
   ): Observable<EcommerceProduct[]> {
-    if (!this.isBrowser) return of([]);
+    return this.getProductsByActiveCategoryPage(categoryId, filters).pipe(map((result) => result.products));
+  }
 
-    let params = new HttpParams();
+  getProductsByActiveCategoryPage(
+    categoryId: string,
+    filters: SpecificationFilter[] = [],
+    page = 1,
+    limit = 12,
+    sort: ProductSortKey = 'relevance'
+  ): Observable<ProductPageResult> {
+    if (!this.isBrowser) {
+      return of({
+        products: [],
+        pagination: {
+          page,
+          limit,
+          totalItems: 0,
+          totalPages: 1,
+          hasNextPage: false,
+          hasPrevPage: page > 1
+        }
+      });
+    }
+
+    let params = new HttpParams().set('page', String(page)).set('limit', String(limit));
+    if (sort !== 'relevance') params = params.set('sort', sort);
 
     for (const filter of filters) {
       if (!filter.specification || !filter.value) continue;
@@ -115,7 +154,29 @@ export class EcommerceService {
       .get<unknown>(this.apiUrl(`ecommerce-settings/categories/active/${categoryId}/products`), {
         params
       })
-      .pipe(map((response) => this.readArray(response).map((product) => this.mapProduct(product, categoryId))));
+      .pipe(map((response) => this.mapProductPageResult(response, categoryId, page, limit)));
+  }
+
+  searchActiveProducts(q: string, page = 1, limit = 12): Observable<ProductPageResult> {
+    if (!this.isBrowser || !q.trim()) {
+      return of({
+        products: [],
+        pagination: {
+          page,
+          limit,
+          totalItems: 0,
+          totalPages: 1,
+          hasNextPage: false,
+          hasPrevPage: page > 1
+        }
+      });
+    }
+
+    const params = new HttpParams().set('q', q.trim()).set('page', String(page)).set('limit', String(limit));
+
+    return this.http
+      .get<unknown>(this.apiUrl('ecommerce-settings/products/search'), { params })
+      .pipe(map((response) => this.mapProductPageResult(response, undefined, page, limit)));
   }
 
   getCategoryFilters(categoryId: string): Observable<CategoryFiltersResult> {
@@ -212,6 +273,34 @@ export class EcommerceService {
     };
   }
 
+  private mapProductPageResult(
+    source: unknown,
+    categoryId: string | undefined,
+    requestedPage: number,
+    requestedLimit: number
+  ): ProductPageResult {
+    const products = this.readArray(source).map((product) => this.mapProduct(product, categoryId));
+    const object = this.asRecord(this.readObject(source));
+    const paginationSource = this.asRecord(object['pagination']);
+    const page = this.readNumber(paginationSource, ['page']) || requestedPage;
+    const limit = this.readNumber(paginationSource, ['limit']) || requestedLimit;
+    const totalItems = this.readNumber(paginationSource, ['totalItems', 'total', 'count']) || products.length;
+    const totalPages =
+      this.readNumber(paginationSource, ['totalPages', 'pages']) || Math.max(1, Math.ceil(totalItems / limit));
+
+    return {
+      products,
+      pagination: {
+        page,
+        limit,
+        totalItems,
+        totalPages,
+        hasNextPage: this.readBoolean(paginationSource, ['hasNextPage'], page < totalPages),
+        hasPrevPage: this.readBoolean(paginationSource, ['hasPrevPage'], page > 1)
+      }
+    };
+  }
+
   private readCategoryFilters(source: unknown): CategoryFilter[] {
     if (Array.isArray(source)) {
       return source
@@ -303,7 +392,7 @@ export class EcommerceService {
       id,
       categoryId:
         categoryId ||
-        this.readString(item, ['categoryId', 'category.id', 'category._id', 'categoryId._id', 'categoryId.id']),
+        this.readString(item, ['categoryId', 'category', 'category.id', 'category._id', 'categoryId._id', 'categoryId.id']),
       title: title || 'منتج',
       subTitle: this.readString(item, ['subTitle', 'subtitle', 'description', 'shortDescription']),
       brand: this.readString(item, ['brand', 'brand.name', 'manufacturer', 'manufacturer.name']),

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, HostListener, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { SiteHeaderComponent } from '../../components/site-header/site-header.component';
@@ -9,6 +9,8 @@ import {
   EcommerceCategory,
   EcommerceProduct,
   EcommerceService,
+  ProductPagination,
+  ProductSortKey,
   SpecificationFilter
 } from '../../services/ecommerce.service';
 import { WebsiteImagesService } from '../../services/website-images.service';
@@ -19,7 +21,7 @@ type SelectOption<T extends string> = {
   value: T;
 };
 
-type SortKey = 'relevance' | 'price_asc' | 'price_desc' | 'rating_desc';
+type SortKey = ProductSortKey;
 
 @Component({
   standalone: true,
@@ -33,12 +35,12 @@ export class ProductsPage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private searchDebounce: ReturnType<typeof setTimeout> | null = null;
 
   protected readonly sortOptions: SelectOption<SortKey>[] = [
-    { label: 'الأكثر صلة', value: 'relevance' },
+    { label: 'التقييم: الأعلى', value: 'rating_desc' },
     { label: 'السعر: من الأقل للأعلى', value: 'price_asc' },
     { label: 'السعر: من الأعلى للأقل', value: 'price_desc' },
-    { label: 'التقييم: الأعلى', value: 'rating_desc' }
   ];
 
   protected readonly categories = signal<EcommerceCategory[]>([]);
@@ -47,17 +49,19 @@ export class ProductsPage {
   protected readonly specificationOptions = signal<CategoryFilter[]>([]);
   protected readonly loading = signal(true);
   protected readonly productsLoading = signal(false);
+  protected readonly nextPageLoading = signal(false);
   protected readonly filtersLoading = signal(false);
   protected readonly loadError = signal('');
   protected readonly websiteImageId = signal('');
   protected readonly targetedTitle = signal('');
   protected readonly isTargetedListing = computed(() => Boolean(this.websiteImageId()));
+  protected readonly isSearchListing = computed(() => Boolean(this.query().trim()));
 
   protected readonly selectedSpecs = signal<Record<string, string[]>>({});
   protected readonly query = signal('');
   protected readonly sort = signal<SortKey>('relevance');
   protected readonly pageSize = signal(12);
-  protected readonly page = signal(1);
+  protected readonly productPagination = signal<ProductPagination | null>(null);
   protected readonly favorites = signal<Record<string, boolean>>({});
 
   protected readonly selectedCategory = computed<EcommerceCategory | undefined>(
@@ -72,13 +76,16 @@ export class ProductsPage {
 
   protected readonly results = computed(() => {
     const normalizedQuery = this.query().trim().toLowerCase();
-    const filtered = this.products().filter((product) => {
-      if (!normalizedQuery) return true;
-      return [product.title, product.subTitle, product.brand]
-        .filter(Boolean)
-        .some((value) => value.toLowerCase().includes(normalizedQuery));
-    });
+    const filtered = this.isSearchListing()
+      ? this.products()
+      : this.products().filter((product) => {
+          if (!normalizedQuery) return true;
+          return [product.title, product.subTitle, product.brand]
+            .filter(Boolean)
+            .some((value) => value.toLowerCase().includes(normalizedQuery));
+        });
 
+    if (this.sort() === 'relevance') return filtered;
     return [...filtered].sort((a, b) => {
       switch (this.sort()) {
         case 'price_asc':
@@ -98,16 +105,15 @@ export class ProductsPage {
     return product.hasDiscount ? product.priceAfterDiscount! : product.retailPrice;
   }
 
-  protected readonly totalPages = computed(() => Math.max(1, Math.ceil(this.results().length / this.pageSize())));
-  protected readonly pages = computed(() => Array.from({ length: this.totalPages() }, (_, index) => index + 1));
-  protected readonly pagedResults = computed(() => {
-    const page = Math.min(Math.max(1, this.page()), this.totalPages());
-    const startIndex = (page - 1) * this.pageSize();
-    return this.results().slice(startIndex, startIndex + this.pageSize());
-  });
+  protected readonly visibleResults = computed(() => this.results());
+  protected readonly hasNextProductPage = computed(
+    () => (this.isSearchListing() || !this.isTargetedListing()) && Boolean(this.productPagination()?.hasNextPage)
+  );
 
   protected readonly resultsLabel = computed(() => {
-    const total = this.results().length;
+    const total = this.productPagination()?.totalItems ?? this.results().length;
+    if (this.isSearchListing()) return `${total} نتيجة بحث عن "${this.query().trim()}"`;
+
     const categoryTitle = this.isTargetedListing()
       ? this.targetedTitle() || 'المنتجات المرتبطة'
       : this.selectedCategory()?.title ?? 'المنتجات';
@@ -122,7 +128,7 @@ export class ProductsPage {
         this.targetedTitle.set(params.get('targetTitle') ?? '');
         this.selectedSpecs.set({});
         this.specificationOptions.set([]);
-        this.page.set(1);
+        this.productPagination.set(null);
         this.loadTargetedProducts(websiteImageId);
         return;
       }
@@ -143,7 +149,6 @@ export class ProductsPage {
   }
 
   protected selectCategory(categoryId: string) {
-    this.page.set(1);
     this.selectedSpecs.set({});
     this.selectedCategoryId.set(categoryId);
     this.router.navigate([], {
@@ -156,7 +161,6 @@ export class ProductsPage {
   }
 
   protected toggleSpecification(specification: string, value: string) {
-    this.page.set(1);
     this.selectedSpecs.update((previous) => {
       const current = previous[specification] ?? [];
       const next = current.includes(value) ? current.filter((entry) => entry !== value) : [...current, value];
@@ -168,7 +172,6 @@ export class ProductsPage {
   }
 
   protected clearFilters() {
-    this.page.set(1);
     this.selectedSpecs.set({});
     this.query.set('');
     this.sort.set('relevance');
@@ -189,12 +192,32 @@ export class ProductsPage {
 
   protected updateQuery(value: string) {
     this.query.set(value);
-    this.page.set(1);
+    if (this.searchDebounce) clearTimeout(this.searchDebounce);
+
+    const term = value.trim();
+    this.searchDebounce = setTimeout(() => {
+      if (term) {
+        this.loadSearchProducts(term);
+        return;
+      }
+
+      if (this.isTargetedListing()) {
+        this.loadTargetedProducts(this.websiteImageId());
+      } else {
+        this.loadProducts(this.selectedCategoryId());
+      }
+    }, 300);
   }
 
-  protected goToPage(page: number) {
-    const nextPage = Math.min(Math.max(1, page), this.totalPages());
-    this.page.set(nextPage);
+  protected updateSort(value: SortKey) {
+    this.sort.set(value);
+    if (this.isSearchListing()) return;
+    if (!this.isTargetedListing()) this.loadProducts(this.selectedCategoryId());
+  }
+
+  @HostListener('window:scroll')
+  protected onWindowScroll() {
+    this.loadNextProductsPageIfNeeded();
   }
 
   protected starsArray(rating: number) {
@@ -224,6 +247,7 @@ export class ProductsPage {
             this.loadProducts(categoryId);
           } else {
             this.products.set([]);
+            this.productPagination.set(null);
             this.specificationOptions.set([]);
           }
         },
@@ -232,7 +256,10 @@ export class ProductsPage {
             this.loadError.set('تعذر تحميل الأقسام والمنتجات حالياً.');
           }
           this.loading.set(false);
-          if (!this.isTargetedListing()) this.products.set([]);
+          if (!this.isTargetedListing()) {
+            this.products.set([]);
+            this.productPagination.set(null);
+          }
         }
       });
   }
@@ -248,35 +275,125 @@ export class ProductsPage {
         next: (products) => {
           if (this.websiteImageId() !== websiteImageId) return;
           this.products.set(products);
+          this.productPagination.set(null);
           this.productsLoading.set(false);
         },
         error: () => {
           if (this.websiteImageId() !== websiteImageId) return;
           this.products.set([]);
+          this.productPagination.set(null);
           this.productsLoading.set(false);
           this.loadError.set('تعذر تحميل المنتجات المرتبطة بهذا العرض حالياً.');
         }
       });
   }
 
-  private loadProducts(categoryId: string) {
+  private loadProducts(categoryId: string, page = 1) {
     if (!categoryId) return;
 
-    this.productsLoading.set(true);
+    const requestedSort = this.sort();
+    const requestedQuery = this.query().trim();
+    const isFirstPage = page === 1;
+    if (isFirstPage) {
+      this.productsLoading.set(true);
+      this.nextPageLoading.set(false);
+      this.productPagination.set(null);
+    } else {
+      this.nextPageLoading.set(true);
+    }
+
     this.ecommerceService
-      .getProductsByActiveCategory(categoryId, this.selectedSpecificationPairs())
+      .getProductsByActiveCategoryPage(
+        categoryId,
+        this.selectedSpecificationPairs(),
+        page,
+        this.pageSize(),
+        requestedSort
+      )
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (products) => {
-          this.products.set(products);
+        next: ({ products, pagination }) => {
+          if (
+            this.selectedCategoryId() !== categoryId ||
+            this.sort() !== requestedSort ||
+            this.query().trim() !== requestedQuery ||
+            this.isTargetedListing()
+          ) {
+            return;
+          }
+          this.productPagination.set(pagination);
+          this.products.update((current) => (isFirstPage ? products : this.uniqueProducts([...current, ...products])));
           this.productsLoading.set(false);
+          this.nextPageLoading.set(false);
+          setTimeout(() => this.loadNextProductsPageIfNeeded());
         },
         error: () => {
           const embeddedProducts = this.categories().find((category) => category.id === categoryId)?.products ?? [];
-          this.products.set(embeddedProducts);
+          if (isFirstPage) this.products.set(embeddedProducts);
+          this.productPagination.set(null);
           this.productsLoading.set(false);
+          this.nextPageLoading.set(false);
         }
       });
+  }
+
+  private loadSearchProducts(q: string, page = 1) {
+    const requestedQuery = q.trim();
+    if (!requestedQuery) return;
+
+    const isFirstPage = page === 1;
+    if (isFirstPage) {
+      this.productsLoading.set(true);
+      this.nextPageLoading.set(false);
+      this.productPagination.set(null);
+    } else {
+      this.nextPageLoading.set(true);
+    }
+
+    this.ecommerceService
+      .searchActiveProducts(requestedQuery, page, this.pageSize())
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: ({ products, pagination }) => {
+          if (this.query().trim() !== requestedQuery) return;
+          this.productPagination.set(pagination);
+          this.products.update((current) => (isFirstPage ? products : this.uniqueProducts([...current, ...products])));
+          this.productsLoading.set(false);
+          this.nextPageLoading.set(false);
+          setTimeout(() => this.loadNextProductsPageIfNeeded());
+        },
+        error: () => {
+          if (this.query().trim() !== requestedQuery) return;
+          if (isFirstPage) this.products.set([]);
+          this.productPagination.set(null);
+          this.productsLoading.set(false);
+          this.nextPageLoading.set(false);
+        }
+      });
+  }
+
+  private loadNextProductsPageIfNeeded() {
+    if (
+      (!this.isSearchListing() && this.isTargetedListing()) ||
+      this.productsLoading() ||
+      this.nextPageLoading() ||
+      !this.hasNextProductPage()
+    ) {
+      return;
+    }
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+    const documentElement = document.documentElement;
+    const distanceToBottom = documentElement.scrollHeight - (window.scrollY + window.innerHeight);
+    if (distanceToBottom > 500) return;
+
+    const nextPage = (this.productPagination()?.page ?? 1) + 1;
+    if (this.isSearchListing()) {
+      this.loadSearchProducts(this.query(), nextPage);
+      return;
+    }
+
+    this.loadProducts(this.selectedCategoryId(), nextPage);
   }
 
   private loadCategoryFilters(categoryId: string) {
@@ -289,7 +406,7 @@ export class ProductsPage {
       .subscribe({
         next: ({ filters, products }) => {
           this.specificationOptions.set(filters.filter((filter) => filter.isVisible));
-          if (products.length > 0 && this.selectedSpecificationPairs().length === 0) {
+          if (products.length > 0 && this.selectedSpecificationPairs().length === 0 && this.products().length === 0) {
             this.products.set(products);
           }
           this.filtersLoading.set(false);
@@ -299,5 +416,13 @@ export class ProductsPage {
           this.filtersLoading.set(false);
         }
       });
+  }
+
+  private uniqueProducts(products: EcommerceProduct[]): EcommerceProduct[] {
+    const unique = new Map<string, EcommerceProduct>();
+    for (const product of products) {
+      if (product.id && !unique.has(product.id)) unique.set(product.id, product);
+    }
+    return Array.from(unique.values());
   }
 }

@@ -28,7 +28,7 @@
       >
         <div
           dir="ltr"
-          class="flex h-52 transition-transform duration-500 ease-out sm:h-64 lg:h-80"
+          class="flex h-[33rem] transition-transform duration-500 ease-out sm:h-64 lg:h-[33rem]"
           [style.transform]="'translateX(-' + activeIndex() * 100 + '%)'"
         >
           @for (image of images(); track image.id; let index = $index) {

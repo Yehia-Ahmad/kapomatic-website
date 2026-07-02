@@ -13,16 +13,32 @@ export type ShippingSettings = {
   freeShippingMinimum: number | null;
 };
 
+export enum PaymentMethod {
+  Cash = 'cash',
+  EWallet = 'wallet',
+  InstaPay = 'instapay'
+}
+
+export type CheckoutProduct = {
+  productId: string;
+  price: number;
+  quantity: number;
+};
+
 export type CheckoutRequest = {
   customerName: string;
   customerPhone: string;
   government: string;
   shippingLocation: string;
-  products: { productId: string; price: number; quantity: number }[];
+  paymentMethod: PaymentMethod;
+  transferPhone: string;
+  transferImage: string;
+  products: CheckoutProduct[];
 };
 
 export type CheckoutResult = {
   _id?: string;
+  orderId?: string;
   invoiceId?: string;
   [key: string]: unknown;
 };

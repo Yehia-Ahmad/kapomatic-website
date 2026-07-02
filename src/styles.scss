@@ -1,6 +1,37 @@
 /* You can add global styles to this file, and also import other style files */
+@font-face {
+  font-family: 'Cairo';
+  src: url('/fonts/cairo/Cairo-400.ttf') format('truetype');
+  font-display: swap;
+  font-style: normal;
+  font-weight: 400;
+}
+
+@font-face {
+  font-family: 'Cairo';
+  src: url('/fonts/cairo/Cairo-500.ttf') format('truetype');
+  font-display: swap;
+  font-style: normal;
+  font-weight: 500;
+}
+
+@font-face {
+  font-family: 'Cairo';
+  src: url('/fonts/cairo/Cairo-700.ttf') format('truetype');
+  font-display: swap;
+  font-style: normal;
+  font-weight: 700;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @import 'leaflet/dist/leaflet.css';
+
+@layer base {
+  html,
+  body {
+    font-family: 'Cairo', 'Noto Kufi Arabic', 'Noto Sans Arabic', Tahoma, Arial, sans-serif;
+  }
+}

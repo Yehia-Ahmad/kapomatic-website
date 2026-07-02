@@ -1,8 +1,13 @@
+const defaultTheme = require('tailwindcss/defaultTheme');
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: ['./src/**/*.{html,ts,scss}'],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Cairo', 'Noto Kufi Arabic', 'Noto Sans Arabic', 'Tahoma', ...defaultTheme.fontFamily.sans]
+      },
       colors: {
         brand: {
           500: '#F2D200',

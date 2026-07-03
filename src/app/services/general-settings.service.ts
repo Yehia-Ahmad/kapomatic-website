@@ -20,6 +20,7 @@ export type GeneralSettings = {
   mainColor: string;
   currencyCode: string;
   freeShippingMinimumAmount: number;
+  websitePhone: string;
   walletPhone: string;
   instapayLink: string;
   storeLocations: StoreLocation[];
@@ -31,6 +32,7 @@ const DEFAULT_SETTINGS: GeneralSettings = {
   mainColor: '#F2D200',
   currencyCode: 'EGP',
   freeShippingMinimumAmount: 0,
+  websitePhone: '',
   walletPhone: '',
   instapayLink: '',
   storeLocations: [],
@@ -97,6 +99,11 @@ export class GeneralSettingsService {
       mainColor: this.validColor(this.readString(value['mainColor'])),
       currencyCode: this.readString(value['currencyCode']) || DEFAULT_SETTINGS.currencyCode,
       freeShippingMinimumAmount: this.readNonNegativeNumber(value['freeShippingMinimumAmount']),
+      websitePhone:
+        this.readString(value['websitePhone']) ||
+        this.readString(value['phone']) ||
+        this.readString(value['contactPhone']) ||
+        this.readString(value['walletPhone']),
       walletPhone: this.readString(value['walletPhone']),
       instapayLink: this.readString(value['instapayLink']),
       storeLocations: this.readArray(value['storeLocations'])

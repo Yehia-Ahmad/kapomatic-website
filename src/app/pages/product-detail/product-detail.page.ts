@@ -8,6 +8,7 @@ import { SiteFooterComponent } from '../../components/site-footer/site-footer.co
 import { CartService } from '../../services/cart.service';
 import { EcommerceProduct, EcommerceService } from '../../services/ecommerce.service';
 import { GeneralSettingsService } from '../../services/general-settings.service';
+import { SeoService } from '../../services/seo.service';
 
 type TabKey = 'specs' | 'reviews' | 'fitment';
 
@@ -21,6 +22,7 @@ export class ProductDetailPage {
   private readonly ecommerceService = inject(EcommerceService);
   private readonly cart = inject(CartService);
   protected readonly generalSettings = inject(GeneralSettingsService);
+  private readonly seo = inject(SeoService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly activeTab = signal<TabKey>('specs');
@@ -30,6 +32,7 @@ export class ProductDetailPage {
   protected readonly loading = signal(true);
   protected readonly loadError = signal('');
   protected readonly activeImageId = signal('');
+  protected readonly categoryName = signal('');
 
   protected readonly activeImage = computed(() => {
     const product = this.product();
@@ -38,6 +41,8 @@ export class ProductDetailPage {
   });
 
   constructor() {
+    this.seo.setDefaultPage();
+
     combineLatest([this.route.paramMap, this.route.queryParamMap])
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.loadProductFromRoute());
@@ -99,6 +104,7 @@ export class ProductDetailPage {
           }
 
           this.categoryId.set(resolvedCategoryId);
+          this.categoryName.set(category?.title ?? '');
           this.loadProduct(resolvedCategoryId, productId);
         },
         error: () => {
@@ -119,6 +125,7 @@ export class ProductDetailPage {
         next: (product) => {
           this.product.set(product);
           this.activeImageId.set(product.images[0]?.id ?? '');
+          this.seo.setProductPage(product, this.categoryName());
           this.loading.set(false);
         },
         error: () => {

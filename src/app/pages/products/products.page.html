@@ -144,7 +144,7 @@
                     ></i>
                   </button>
 
-                  <a class="block p-4" [routerLink]="['/products', p.id]" [queryParams]="{ categoryId: p.categoryId || selectedCategoryId() }">
+                  <a class="block p-4 pb-3" [routerLink]="['/products', p.id]" [queryParams]="{ categoryId: p.categoryId || selectedCategoryId() }">
                     <div class="grid h-40 place-items-center rounded-xl bg-surface-50 p-4">
                       @if (p.imageSrc) {
                         <img class="max-h-32 w-auto object-contain" [src]="p.imageSrc" [alt]="p.title" />
@@ -207,6 +207,18 @@
                       </span>
                     </div>
                   </a>
+
+                  <div class="px-4 pb-4">
+                    <button
+                      type="button"
+                      class="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 text-sm font-extrabold text-ink-900 shadow-sm transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
+                      [disabled]="!p.inStock"
+                      (click)="addToCart(p)"
+                    >
+                      <i class="fa-solid fa-cart-plus text-sm" aria-hidden="true"></i>
+                      {{ p.inStock ? 'أضف إلى السلة' : 'غير متوفر' }}
+                    </button>
+                  </div>
                 </article>
               }
             </div>

@@ -15,6 +15,8 @@ import {
 } from '../../services/ecommerce.service';
 import { WebsiteImagesService } from '../../services/website-images.service';
 import { GeneralSettingsService } from '../../services/general-settings.service';
+import { CartService } from '../../services/cart.service';
+import { SeoService } from '../../services/seo.service';
 
 type SelectOption<T extends string> = {
   label: string;
@@ -31,7 +33,9 @@ type SortKey = ProductSortKey;
 export class ProductsPage {
   private readonly ecommerceService = inject(EcommerceService);
   private readonly websiteImagesService = inject(WebsiteImagesService);
+  protected readonly cart = inject(CartService);
   protected readonly generalSettings = inject(GeneralSettingsService);
+  private readonly seo = inject(SeoService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
@@ -129,6 +133,7 @@ export class ProductsPage {
         this.selectedSpecs.set({});
         this.specificationOptions.set([]);
         this.productPagination.set(null);
+        this.updateSeo();
         this.loadTargetedProducts(websiteImageId);
         return;
       }
@@ -142,10 +147,12 @@ export class ProductsPage {
         this.selectedSpecs.set({});
         this.loadCategoryFilters(categoryId);
         this.loadProducts(categoryId);
+        this.updateSeo();
       }
     });
 
     this.loadCategories();
+    this.updateSeo();
   }
 
   protected selectCategory(categoryId: string) {
@@ -156,6 +163,7 @@ export class ProductsPage {
       queryParams: { categoryId, websiteImageId: null, targetTitle: null },
       queryParamsHandling: 'merge'
     });
+    this.updateSeo();
     this.loadCategoryFilters(categoryId);
     this.loadProducts(categoryId);
   }
@@ -190,8 +198,14 @@ export class ProductsPage {
     this.favorites.update((prev) => ({ ...prev, [productId]: !prev[productId] }));
   }
 
+  protected addToCart(product: EcommerceProduct) {
+    if (!product.inStock) return;
+    this.cart.addProduct(product);
+  }
+
   protected updateQuery(value: string) {
     this.query.set(value);
+    this.updateSeo();
     if (this.searchDebounce) clearTimeout(this.searchDebounce);
 
     const term = value.trim();
@@ -239,6 +253,7 @@ export class ProductsPage {
 
           this.selectedCategoryId.set(categoryId);
           this.loading.set(false);
+          this.updateSeo();
 
           if (this.isTargetedListing()) {
             return;
@@ -277,6 +292,7 @@ export class ProductsPage {
           this.products.set(products);
           this.productPagination.set(null);
           this.productsLoading.set(false);
+          this.updateSeo();
         },
         error: () => {
           if (this.websiteImageId() !== websiteImageId) return;
@@ -325,6 +341,7 @@ export class ProductsPage {
           this.products.update((current) => (isFirstPage ? products : this.uniqueProducts([...current, ...products])));
           this.productsLoading.set(false);
           this.nextPageLoading.set(false);
+          if (isFirstPage) this.updateSeo();
           setTimeout(() => this.loadNextProductsPageIfNeeded());
         },
         error: () => {
@@ -360,6 +377,7 @@ export class ProductsPage {
           this.products.update((current) => (isFirstPage ? products : this.uniqueProducts([...current, ...products])));
           this.productsLoading.set(false);
           this.nextPageLoading.set(false);
+          if (isFirstPage) this.updateSeo();
           setTimeout(() => this.loadNextProductsPageIfNeeded());
         },
         error: () => {
@@ -424,5 +442,14 @@ export class ProductsPage {
       if (product.id && !unique.has(product.id)) unique.set(product.id, product);
     }
     return Array.from(unique.values());
+  }
+
+  private updateSeo() {
+    this.seo.setProductsPage({
+      categoryName: this.isSearchListing() || this.isTargetedListing() ? undefined : this.selectedCategory()?.title,
+      categoryId: this.isSearchListing() || this.isTargetedListing() ? undefined : this.selectedCategoryId(),
+      searchQuery: this.query(),
+      targetedTitle: this.isTargetedListing() ? this.targetedTitle() : undefined
+    });
   }
 }

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { Component, DestroyRef, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterModule } from '@angular/router';
 import { SiteHeaderComponent } from '../../components/site-header/site-header.component';
@@ -7,6 +7,8 @@ import { SiteFooterComponent } from '../../components/site-footer/site-footer.co
 import { WebsiteTargetedImagesComponent } from '../../components/website-targeted-images/website-targeted-images.component';
 import { HomeCategoryProductsComponent } from '../../components/home-category-products/home-category-products.component';
 import { EcommerceCategory, EcommerceService } from '../../services/ecommerce.service';
+import { GeneralSettingsService } from '../../services/general-settings.service';
+import { SeoService } from '../../services/seo.service';
 
 @Component({
   standalone: true,
@@ -22,6 +24,8 @@ import { EcommerceCategory, EcommerceService } from '../../services/ecommerce.se
 })
 export class HomePage {
   private readonly ecommerceService = inject(EcommerceService);
+  private readonly generalSettings = inject(GeneralSettingsService);
+  private readonly seo = inject(SeoService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly categories = signal<EcommerceCategory[]>([]);
@@ -29,6 +33,10 @@ export class HomePage {
   protected readonly loadError = signal('');
 
   constructor() {
+    effect(() => {
+      this.seo.setHomePage(this.generalSettings.settings());
+    });
+
     this.ecommerceService
       .getActiveCategoriesWithProductsAndSettings()
       .pipe(takeUntilDestroyed(this.destroyRef))

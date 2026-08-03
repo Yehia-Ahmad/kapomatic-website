@@ -1,5 +1,5 @@
 <div dir="rtl" class="relative flex min-h-screen flex-col bg-surface-50 text-ink-900">
-  <app-site-header />
+  <app-site-header (searchValueChange)="searchProducts($event)" />
 
   <!-- Breadcrumb -->
   <div class="border-b border-line-200 bg-surface-0">

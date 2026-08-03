@@ -129,6 +129,7 @@ export class ProductsPage {
       const websiteImageId = params.get('websiteImageId') ?? '';
       if (websiteImageId) {
         this.websiteImageId.set(websiteImageId);
+        this.query.set('');
         this.targetedTitle.set(params.get('targetTitle') ?? '');
         this.selectedSpecs.set({});
         this.specificationOptions.set([]);
@@ -141,12 +142,29 @@ export class ProductsPage {
       const wasTargeted = this.isTargetedListing();
       this.websiteImageId.set('');
       this.targetedTitle.set('');
+
+      const search = params.get('search')?.trim() ?? '';
+      if (search) {
+        this.query.set(search);
+        this.selectedSpecs.set({});
+        this.specificationOptions.set([]);
+        this.productPagination.set(null);
+        this.updateSeo();
+        this.loadSearchProducts(search);
+        return;
+      }
+
+      const wasSearch = this.isSearchListing();
+      this.query.set('');
       const categoryId = params.get('categoryId') ?? '';
-      if (categoryId && (wasTargeted || categoryId !== this.selectedCategoryId())) {
+      if (categoryId && (wasTargeted || wasSearch || categoryId !== this.selectedCategoryId())) {
         this.selectedCategoryId.set(categoryId);
         this.selectedSpecs.set({});
         this.loadCategoryFilters(categoryId);
         this.loadProducts(categoryId);
+        this.updateSeo();
+      } else if (wasSearch && this.selectedCategoryId()) {
+        this.loadProducts(this.selectedCategoryId());
         this.updateSeo();
       }
     });
@@ -211,9 +229,25 @@ export class ProductsPage {
     const term = value.trim();
     this.searchDebounce = setTimeout(() => {
       if (term) {
+        this.router.navigate([], {
+          relativeTo: this.route,
+          queryParams: {
+            search: term,
+            websiteImageId: null,
+            targetTitle: null,
+            categoryId: null
+          },
+          queryParamsHandling: 'merge'
+        });
         this.loadSearchProducts(term);
         return;
       }
+
+      this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { search: null },
+        queryParamsHandling: 'merge'
+      });
 
       if (this.isTargetedListing()) {
         this.loadTargetedProducts(this.websiteImageId());

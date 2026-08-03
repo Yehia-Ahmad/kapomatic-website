@@ -1,5 +1,6 @@
 import { isPlatformBrowser } from '@angular/common';
 import { Component, DestroyRef, OnDestroy, PLATFORM_ID, computed, inject, signal } from '@angular/core';
+import { Params, RouterLink } from '@angular/router';
 import {
   TargetedWebsiteImage,
   WebsiteImagesService
@@ -8,6 +9,7 @@ import {
 @Component({
   selector: 'app-website-targeted-images',
   standalone: true,
+  imports: [RouterLink],
   templateUrl: './website-targeted-images.component.html'
 })
 export class WebsiteTargetedImagesComponent implements OnDestroy {
@@ -59,6 +61,17 @@ export class WebsiteTargetedImagesComponent implements OnDestroy {
     if (index < 0 || index >= this.images().length) return;
     this.activeIndex.set(index);
     this.restartAutoplay();
+  }
+
+  protected imageLink(image: TargetedWebsiteImage): unknown[] {
+    return ['/products'];
+  }
+
+  protected imageQueryParams(image: TargetedWebsiteImage): Params | null {
+    return {
+      websiteImageId: image.id,
+      targetTitle: image.title || null
+    };
   }
 
   protected startAutoplay(): void {

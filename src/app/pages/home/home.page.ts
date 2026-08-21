@@ -9,6 +9,8 @@ import { HomeCategoryProductsComponent } from '../../components/home-category-pr
 import { EcommerceCategory, EcommerceService } from '../../services/ecommerce.service';
 import { GeneralSettingsService } from '../../services/general-settings.service';
 import { SeoService } from '../../services/seo.service';
+import { LocalizationService } from '../../services/localization.service';
+import { UrlService } from '../../services/url.service';
 
 @Component({
   standalone: true,
@@ -28,6 +30,8 @@ export class HomePage {
   private readonly seo = inject(SeoService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
+  protected readonly localization = inject(LocalizationService);
+  private readonly urls = inject(UrlService);
   private searchDebounce: ReturnType<typeof setTimeout> | null = null;
 
   protected readonly categories = signal<EcommerceCategory[]>([]);
@@ -40,7 +44,7 @@ export class HomePage {
     });
 
     effect(() => {
-      this.seo.setHomePage(this.generalSettings.settings());
+      this.seo.setHomePage(this.generalSettings.settings(), this.localization.currentLanguage());
     });
 
     this.ecommerceService
@@ -64,7 +68,11 @@ export class HomePage {
     if (!search) return;
 
     this.searchDebounce = setTimeout(() => {
-      this.router.navigate(['/products'], { queryParams: { search } });
+      this.router.navigate([this.urls.localizedSearch(this.localization.currentLanguage())], { queryParams: { q: search } });
     }, 300);
+  }
+
+  protected categoryLink(category: EcommerceCategory): string {
+    return this.urls.localizedCategory(this.localization.currentLanguage(), category.slug || category.id);
   }
 }

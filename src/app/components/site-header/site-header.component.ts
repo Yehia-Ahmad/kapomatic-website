@@ -3,6 +3,8 @@ import { Component, EventEmitter, Input, Output, computed, inject, signal } from
 import { RouterModule } from '@angular/router';
 import { CartService } from '../../services/cart.service';
 import { GeneralSettingsService } from '../../services/general-settings.service';
+import { LocalizationService } from '../../services/localization.service';
+import { UrlService } from '../../services/url.service';
 
 @Component({
   selector: 'app-site-header',
@@ -13,6 +15,8 @@ import { GeneralSettingsService } from '../../services/general-settings.service'
 export class SiteHeaderComponent {
   protected readonly cart = inject(CartService);
   protected readonly generalSettings = inject(GeneralSettingsService);
+  protected readonly localization = inject(LocalizationService);
+  protected readonly urls = inject(UrlService);
   protected readonly drawerOpen = signal(false);
   protected readonly freeShippingTarget = computed(
     () => this.generalSettings.settings().freeShippingMinimumAmount

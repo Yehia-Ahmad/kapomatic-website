@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, HostListener, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { combineLatest } from 'rxjs';
 import { SiteHeaderComponent } from '../../components/site-header/site-header.component';
 import { SiteFooterComponent } from '../../components/site-footer/site-footer.component';
 import {
@@ -17,6 +18,8 @@ import { WebsiteImagesService } from '../../services/website-images.service';
 import { GeneralSettingsService } from '../../services/general-settings.service';
 import { CartService } from '../../services/cart.service';
 import { SeoService } from '../../services/seo.service';
+import { LocalizationService } from '../../services/localization.service';
+import { LanguageCode, UrlService } from '../../services/url.service';
 
 type SelectOption<T extends string> = {
   label: string;
@@ -39,6 +42,8 @@ export class ProductsPage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  protected readonly localization = inject(LocalizationService);
+  protected readonly urls = inject(UrlService);
   private searchDebounce: ReturnType<typeof setTimeout> | null = null;
 
   protected readonly sortOptions: SelectOption<SortKey>[] = [
@@ -58,6 +63,8 @@ export class ProductsPage {
   protected readonly loadError = signal('');
   protected readonly websiteImageId = signal('');
   protected readonly targetedTitle = signal('');
+  protected readonly language = signal<LanguageCode>('ar');
+  protected readonly selectedCategorySlug = signal('');
   protected readonly isTargetedListing = computed(() => Boolean(this.websiteImageId()));
   protected readonly isSearchListing = computed(() => Boolean(this.query().trim()));
 
@@ -125,12 +132,19 @@ export class ProductsPage {
   });
 
   constructor() {
-    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
-      const websiteImageId = params.get('websiteImageId') ?? '';
+    combineLatest([this.route.paramMap, this.route.queryParamMap])
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(([routeParams, queryParams]) => {
+      const language = this.localization.languageFromSnapshot(this.route.snapshot);
+      this.language.set(language);
+      const slug = routeParams.get('slug') ?? '';
+      const isCategoryRoute = this.router.url.split('?')[0].includes(`/${language}/categories/`);
+      const isSearchRoute = this.router.url.split('?')[0] === `/${language}/search`;
+      const websiteImageId = queryParams.get('websiteImageId') ?? '';
       if (websiteImageId) {
         this.websiteImageId.set(websiteImageId);
         this.query.set('');
-        this.targetedTitle.set(params.get('targetTitle') ?? '');
+        this.targetedTitle.set(queryParams.get('targetTitle') ?? '');
         this.selectedSpecs.set({});
         this.specificationOptions.set([]);
         this.productPagination.set(null);
@@ -143,8 +157,8 @@ export class ProductsPage {
       this.websiteImageId.set('');
       this.targetedTitle.set('');
 
-      const search = params.get('search')?.trim() ?? '';
-      if (search) {
+      const search = (queryParams.get('q') ?? queryParams.get('search') ?? '').trim();
+      if (isSearchRoute || search) {
         this.query.set(search);
         this.selectedSpecs.set({});
         this.specificationOptions.set([]);
@@ -156,9 +170,17 @@ export class ProductsPage {
 
       const wasSearch = this.isSearchListing();
       this.query.set('');
-      const categoryId = params.get('categoryId') ?? '';
+      if (isCategoryRoute && slug) {
+        this.selectedCategorySlug.set(slug);
+        this.selectedSpecs.set({});
+        this.loadPublicCategory(slug);
+        return;
+      }
+
+      const categoryId = queryParams.get('categoryId') ?? '';
       if (categoryId && (wasTargeted || wasSearch || categoryId !== this.selectedCategoryId())) {
         this.selectedCategoryId.set(categoryId);
+        this.selectedCategorySlug.set('');
         this.selectedSpecs.set({});
         this.loadCategoryFilters(categoryId);
         this.loadProducts(categoryId);
@@ -176,11 +198,8 @@ export class ProductsPage {
   protected selectCategory(categoryId: string) {
     this.selectedSpecs.set({});
     this.selectedCategoryId.set(categoryId);
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: { categoryId, websiteImageId: null, targetTitle: null },
-      queryParamsHandling: 'merge'
-    });
+    const category = this.categories().find((entry) => entry.id === categoryId);
+    this.router.navigate([this.categoryLink(category ?? { id: categoryId, title: '', subtitle: '', imageSrc: '', products: [] })]);
     this.updateSeo();
     this.loadCategoryFilters(categoryId);
     this.loadProducts(categoryId);
@@ -229,25 +248,12 @@ export class ProductsPage {
     const term = value.trim();
     this.searchDebounce = setTimeout(() => {
       if (term) {
-        this.router.navigate([], {
-          relativeTo: this.route,
-          queryParams: {
-            search: term,
-            websiteImageId: null,
-            targetTitle: null,
-            categoryId: null
-          },
-          queryParamsHandling: 'merge'
-        });
+        this.router.navigate([this.urls.localizedSearch(this.language())], { queryParams: { q: term } });
         this.loadSearchProducts(term);
         return;
       }
 
-      this.router.navigate([], {
-        relativeTo: this.route,
-        queryParams: { search: null },
-        queryParamsHandling: 'merge'
-      });
+      this.router.navigate([this.urls.localizedHome(this.language())]);
 
       if (this.isTargetedListing()) {
         this.loadTargetedProducts(this.websiteImageId());
@@ -273,6 +279,14 @@ export class ProductsPage {
     return Array.from({ length: 5 }, (_, i) => i < fullStars);
   }
 
+  protected categoryLink(category: EcommerceCategory): string {
+    return this.urls.localizedCategory(this.language(), category.slug || category.id);
+  }
+
+  protected productLink(product: EcommerceProduct): string {
+    return this.urls.localizedProduct(this.language(), product.slug || product.id);
+  }
+
   private loadCategories() {
     this.loading.set(!this.isTargetedListing());
     this.ecommerceService
@@ -289,7 +303,7 @@ export class ProductsPage {
           this.loading.set(false);
           this.updateSeo();
 
-          if (this.isTargetedListing()) {
+          if (this.isTargetedListing() || this.selectedCategorySlug()) {
             return;
           } else if (categoryId) {
             this.loadCategoryFilters(categoryId);
@@ -338,6 +352,42 @@ export class ProductsPage {
       });
   }
 
+  private loadPublicCategory(slug: string) {
+    this.loading.set(false);
+    this.productsLoading.set(true);
+    this.loadError.set('');
+
+    this.ecommerceService
+      .getPublicCategoryBySlug(this.language(), slug)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: ({ category }) => {
+          if (this.selectedCategorySlug() !== slug) return;
+          this.categories.update((current) => {
+            const withoutCurrent = current.filter((entry) => entry.id !== category.id);
+            return [category, ...withoutCurrent];
+          });
+          this.selectedCategoryId.set(category.id);
+          this.loadCategoryFilters(category.id);
+          this.loadProducts(category.id);
+        },
+        error: () => {
+          if (this.selectedCategorySlug() !== slug) return;
+          this.products.set([]);
+          this.productPagination.set(null);
+          this.productsLoading.set(false);
+          this.loadError.set('تعذر تحميل القسم حالياً.');
+          this.seo.setNoIndexPage({
+            title: this.language() === 'ar' ? 'القسم غير موجود | كابوماتيك' : 'Category Not Found | Kapomatic',
+            description: this.language() === 'ar' ? 'القسم المطلوب غير متاح.' : 'The requested category is not available.',
+            path: this.router.url.split('?')[0],
+            language: this.language(),
+            follow: false
+          });
+        }
+      });
+  }
+
   private loadProducts(categoryId: string, page = 1) {
     if (!categoryId) return;
 
@@ -352,14 +402,24 @@ export class ProductsPage {
       this.nextPageLoading.set(true);
     }
 
-    this.ecommerceService
-      .getProductsByActiveCategoryPage(
-        categoryId,
-        this.selectedSpecificationPairs(),
-        page,
-        this.pageSize(),
-        requestedSort
-      )
+    const request = this.selectedCategorySlug()
+      ? this.ecommerceService.getPublicCategoryProductsBySlug(
+          this.language(),
+          this.selectedCategorySlug(),
+          this.selectedSpecificationPairs(),
+          page,
+          this.pageSize(),
+          requestedSort
+        )
+      : this.ecommerceService.getProductsByActiveCategoryPage(
+          categoryId,
+          this.selectedSpecificationPairs(),
+          page,
+          this.pageSize(),
+          requestedSort
+        );
+
+    request
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: ({ products, pagination }) => {
@@ -390,7 +450,14 @@ export class ProductsPage {
 
   private loadSearchProducts(q: string, page = 1) {
     const requestedQuery = q.trim();
-    if (!requestedQuery) return;
+    if (!requestedQuery) {
+      this.products.set([]);
+      this.productPagination.set(null);
+      this.productsLoading.set(false);
+      this.nextPageLoading.set(false);
+      this.updateSeo();
+      return;
+    }
 
     const isFirstPage = page === 1;
     if (isFirstPage) {
@@ -402,7 +469,7 @@ export class ProductsPage {
     }
 
     this.ecommerceService
-      .searchActiveProducts(requestedQuery, page, this.pageSize())
+      .searchPublicProducts(this.language(), requestedQuery, page, this.pageSize())
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: ({ products, pagination }) => {
@@ -479,11 +546,53 @@ export class ProductsPage {
   }
 
   private updateSeo() {
+    const category = this.selectedCategory();
+    const categorySlug = this.selectedCategorySlug() || category?.slug;
+    const canonicalPath = categorySlug ? this.urls.localizedCategory(this.language(), categorySlug) : this.router.url;
+    const alternates = category?.alternateSlugs
+      ? {
+          ar: category.alternateSlugs.ar
+            ? this.urls.absoluteUrl(this.urls.localizedCategory('ar', category.alternateSlugs.ar))
+            : undefined,
+          en: category.alternateSlugs.en
+            ? this.urls.absoluteUrl(this.urls.localizedCategory('en', category.alternateSlugs.en))
+            : undefined,
+          xDefault: category.alternateSlugs.ar
+            ? this.urls.absoluteUrl(this.urls.localizedCategory('ar', category.alternateSlugs.ar))
+            : undefined
+        }
+      : undefined;
+
+    if (categorySlug && !this.isSearchListing() && !this.isTargetedListing()) {
+      this.seo.setPage(
+        this.seo.fromBackend(category?.seo, {
+          title: category?.title ? `${category.title} | كابوماتيك` : 'كابوماتيك',
+          description: category?.description || category?.subtitle || 'منتجات كابوماتيك.',
+          canonicalUrl: this.urls.absoluteUrl(canonicalPath),
+          language: this.language(),
+          robots: this.selectedSpecificationPairs().length > 0 || this.sort() !== 'relevance' ? 'noindex,follow' : 'index,follow',
+          image: category?.imageSrc,
+          alternateUrls: alternates,
+          structuredData: [
+            this.seo.breadcrumbStructuredData([
+              { name: this.language() === 'ar' ? 'الرئيسية' : 'Home', url: this.urls.localizedHome(this.language()) },
+              { name: category?.title || 'Category', url: canonicalPath }
+            ]),
+            this.seo.itemListStructuredData(this.products(), this.language())
+          ]
+        })
+      );
+      return;
+    }
+
     this.seo.setProductsPage({
       categoryName: this.isSearchListing() || this.isTargetedListing() ? undefined : this.selectedCategory()?.title,
       categoryId: this.isSearchListing() || this.isTargetedListing() ? undefined : this.selectedCategoryId(),
+      categorySlug: this.isSearchListing() || this.isTargetedListing() ? undefined : this.selectedCategorySlug(),
       searchQuery: this.query(),
-      targetedTitle: this.isTargetedListing() ? this.targetedTitle() : undefined
+      targetedTitle: this.isTargetedListing() ? this.targetedTitle() : undefined,
+      language: this.language(),
+      filtersActive: this.selectedSpecificationPairs().length > 0 || this.sort() !== 'relevance'
     });
   }
 }

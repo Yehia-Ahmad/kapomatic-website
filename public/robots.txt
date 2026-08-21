@@ -1,4 +1,13 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://kapomatic.com/sitemap.xml
+Disallow: /ar/cart
+Disallow: /en/cart
+Disallow: /ar/checkout
+Disallow: /en/checkout
+Disallow: /ar/search
+Disallow: /en/search
+Disallow: /*?sort=
+Disallow: /*?filter=
+
+Sitemap: {{WEBSITE_ORIGIN}}/sitemap.xml

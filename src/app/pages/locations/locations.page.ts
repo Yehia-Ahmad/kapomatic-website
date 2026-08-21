@@ -14,6 +14,9 @@ import type * as Leaflet from 'leaflet';
 import { SiteFooterComponent } from '../../components/site-footer/site-footer.component';
 import { SiteHeaderComponent } from '../../components/site-header/site-header.component';
 import { GeneralSettingsService, StoreLocation } from '../../services/general-settings.service';
+import { LocalizationService } from '../../services/localization.service';
+import { SeoService } from '../../services/seo.service';
+import { UrlService } from '../../services/url.service';
 
 @Component({
   standalone: true,
@@ -23,6 +26,9 @@ import { GeneralSettingsService, StoreLocation } from '../../services/general-se
 })
 export class LocationsPage implements OnDestroy {
   protected readonly generalSettings = inject(GeneralSettingsService);
+  protected readonly localization = inject(LocalizationService);
+  protected readonly urls = inject(UrlService);
+  private readonly seo = inject(SeoService);
   private readonly platformId = inject(PLATFORM_ID);
 
   @ViewChild('leafletMap')
@@ -43,6 +49,23 @@ export class LocationsPage implements OnDestroy {
   );
 
   constructor() {
+    const language = this.localization.currentLanguage();
+    this.seo.setPage({
+      title: language === 'ar' ? 'أين تجدنا | كابوماتيك' : 'Locations | Kapomatic',
+      description:
+        language === 'ar'
+          ? 'تعرف على فروع ومواقع كابوماتيك.'
+          : 'Find Kapomatic store locations and map links.',
+      canonicalUrl: this.urls.absoluteUrl(this.urls.localizedLocations(language)),
+      language,
+      direction: this.urls.direction(language),
+      alternateUrls: {
+        ar: this.urls.absoluteUrl(this.urls.localizedLocations('ar')),
+        en: this.urls.absoluteUrl(this.urls.localizedLocations('en')),
+        xDefault: this.urls.absoluteUrl(this.urls.localizedLocations('ar'))
+      }
+    });
+
     effect(() => {
       this.generalSettings.settings();
       if (this.map) this.renderMarkers();

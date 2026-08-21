@@ -1,4 +1,4 @@
-<div dir="rtl" class="flex min-h-screen flex-col bg-surface-50 text-ink-900">
+<div [attr.dir]="localization.currentDirection()" class="flex min-h-screen flex-col bg-surface-50 text-ink-900">
   <app-site-header
     searchPlaceholder="البحث في المنتجات"
     [searchValue]="query()"
@@ -7,7 +7,7 @@
 
   <div class="border-b border-line-200 bg-surface-0">
     <div class="mx-auto flex max-w-6xl items-center gap-2 px-4 py-2 text-xs text-ink-500">
-      <a routerLink="/" class="hover:text-ink-700">الرئيسية</a>
+      <a [routerLink]="urls.localizedHome(language())" class="hover:text-ink-700">الرئيسية</a>
       <span>›</span>
       <span class="text-ink-700">المنتجات</span>
     </div>
@@ -96,6 +96,11 @@
               <h1 class="text-2xl font-extrabold text-ink-900 sm:text-3xl">
                 {{ isSearchListing() ? 'نتائج البحث' : (isTargetedListing() ? (targetedTitle() || 'المنتجات المرتبطة') : (selectedCategory()?.title ?? 'المنتجات')) }}
               </h1>
+              @if (!isSearchListing() && !isTargetedListing() && (selectedCategory()?.description || selectedCategory()?.subtitle)) {
+                <p class="mt-2 max-w-3xl text-sm leading-6 text-ink-600">
+                  {{ selectedCategory()?.description || selectedCategory()?.subtitle }}
+                </p>
+              }
               <div class="mt-1 text-xs text-ink-500">{{ productsLoading() ? 'جاري تحديث المنتجات...' : resultsLabel() }}</div>
             </div>
 
@@ -144,10 +149,10 @@
                     ></i>
                   </button>
 
-                  <a class="block p-4 pb-3" [routerLink]="['/products', p.id]" [queryParams]="{ categoryId: p.categoryId || selectedCategoryId() }">
+                  <a class="block p-4 pb-3" [routerLink]="productLink(p)">
                     <div class="grid h-40 place-items-center rounded-xl bg-surface-50 p-4">
                       @if (p.imageSrc) {
-                        <img class="max-h-32 w-auto object-contain" [src]="p.imageSrc" [alt]="p.title" />
+                        <img class="max-h-32 w-auto object-contain" [src]="p.imageSrc" [alt]="p.imageAlt || p.title" [attr.width]="p.images[0]?.width || 320" [attr.height]="p.images[0]?.height || 320" loading="lazy" />
                       } @else {
                         <i class="fa-solid fa-box-open text-4xl text-ink-300" aria-hidden="true"></i>
                       }

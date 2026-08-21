@@ -4,6 +4,7 @@ import { Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { Observable, catchError, forkJoin, map, of, switchMap, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { EcommerceProduct, EcommerceService } from './ecommerce.service';
+import { UrlService } from './url.service';
 
 export type WebsiteImageTargetType = 'category' | 'product' | 'both' | 'price' | string;
 
@@ -24,14 +25,13 @@ export class WebsiteImagesService {
   private readonly http = inject(HttpClient);
   private readonly ecommerceService = inject(EcommerceService);
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly urls = inject(UrlService);
   private readonly apiBaseUrl = environment.api_base_url.replace(/\/+$/, '');
-  private readonly apiOrigin = new URL(this.apiBaseUrl).origin;
   private readonly resolvedProductsCache = new Map<string, EcommerceProduct[]>();
   private readonly imagesCache = new Map<string, TargetedWebsiteImage>();
 
   getActiveWithProducts(): Observable<TargetedWebsiteImage[]> {
-    if (!isPlatformBrowser(this.platformId)) return of([]);
-
+    if (!this.urls.apiConfigured()) return of([]);
     return this.http.get<unknown>(`${this.apiBaseUrl}/website-images/active-with-products`).pipe(
       map((response) => this.readArray(response).map((item) => this.mapWebsiteImage(item))),
       tap((images) => {
@@ -48,7 +48,7 @@ export class WebsiteImagesService {
   getProducts(imageId: string): Observable<EcommerceProduct[]> {
     const cached = this.resolvedProductsCache.get(imageId);
     if (cached) return of(cached);
-    if (!isPlatformBrowser(this.platformId)) return of([]);
+    if (!this.urls.apiConfigured()) return of([]);
 
     return this.http.get<unknown>(`${this.apiBaseUrl}/website-images/${encodeURIComponent(imageId)}/products`).pipe(
       map((response) => this.uniqueProducts(this.ecommerceService.mapProductsResponse(response))),
@@ -166,8 +166,9 @@ export class WebsiteImagesService {
   private imageSource(value: string): string {
     if (!value) return '';
     if (/^(data:image\/|https?:\/\/)/i.test(value)) return value;
-    if (value.startsWith('/')) return `${this.apiOrigin}${value}`;
-    if (value.startsWith('api/')) return `${this.apiOrigin}/${value}`;
+    const apiOrigin = this.urls.apiOrigin();
+    if (value.startsWith('/')) return apiOrigin ? `${apiOrigin}${value}` : value;
+    if (value.startsWith('api/')) return apiOrigin ? `${apiOrigin}/${value}` : `/${value}`;
     return `data:image/jpeg;base64,${value}`;
   }
 

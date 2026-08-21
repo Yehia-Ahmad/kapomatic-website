@@ -1,8 +1,9 @@
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Injectable, PLATFORM_ID, inject, signal } from '@angular/core';
+import { Injectable, PLATFORM_ID, TransferState, inject, makeStateKey, signal } from '@angular/core';
 import { finalize } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { UrlService } from './url.service';
 
 export type StoreLocation = {
   name: string;
@@ -38,11 +39,14 @@ const DEFAULT_SETTINGS: GeneralSettings = {
   storeLocations: [],
   socialMediaLinks: []
 };
+const SETTINGS_STATE_KEY = makeStateKey<GeneralSettings>('general-settings');
 
 @Injectable({ providedIn: 'root' })
 export class GeneralSettingsService {
   private readonly http = inject(HttpClient);
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly transferState = inject(TransferState);
+  private readonly urls = inject(UrlService);
   private readonly apiBaseUrl = environment.api_base_url.replace(/\/+$/, '');
   private loaded = false;
 
@@ -51,7 +55,20 @@ export class GeneralSettingsService {
   readonly loadError = signal('');
 
   load(): void {
-    if (this.loaded || this.loading() || !isPlatformBrowser(this.platformId)) return;
+    if (this.loaded || this.loading()) return;
+
+    if (!this.urls.apiConfigured()) {
+      this.settings.set(DEFAULT_SETTINGS);
+      this.loaded = true;
+      return;
+    }
+
+    if (this.transferState.hasKey(SETTINGS_STATE_KEY)) {
+      this.settings.set(this.transferState.get(SETTINGS_STATE_KEY, DEFAULT_SETTINGS));
+      this.transferState.remove(SETTINGS_STATE_KEY);
+      this.loaded = true;
+      return;
+    }
 
     this.loading.set(true);
     this.loadError.set('');
@@ -60,7 +77,9 @@ export class GeneralSettingsService {
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: (response) => {
-          this.settings.set(this.mapSettings(response));
+          const settings = this.mapSettings(response);
+          this.settings.set(settings);
+          if (!isPlatformBrowser(this.platformId)) this.transferState.set(SETTINGS_STATE_KEY, settings);
           this.loaded = true;
         },
         error: () => this.loadError.set('تعذر تحميل إعدادات المتجر حالياً.')

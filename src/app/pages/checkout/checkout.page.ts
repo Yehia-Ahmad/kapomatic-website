@@ -9,6 +9,9 @@ import { SiteFooterComponent } from '../../components/site-footer/site-footer.co
 import { CartService } from '../../services/cart.service';
 import { CheckoutService, GovernmentShipping, PaymentMethod } from '../../services/checkout.service';
 import { GeneralSettingsService } from '../../services/general-settings.service';
+import { LocalizationService } from '../../services/localization.service';
+import { SeoService } from '../../services/seo.service';
+import { UrlService } from '../../services/url.service';
 
 type PaymentOption = {
   value: PaymentMethod;
@@ -35,6 +38,9 @@ export class CheckoutPage {
   private readonly checkoutService = inject(CheckoutService);
   protected readonly generalSettings = inject(GeneralSettingsService);
   protected readonly cart = inject(CartService);
+  protected readonly localization = inject(LocalizationService);
+  protected readonly urls = inject(UrlService);
+  private readonly seo = inject(SeoService);
 
   protected readonly governments = signal<GovernmentShipping[]>([]);
   protected readonly freeShippingMinimum = computed(
@@ -94,6 +100,15 @@ export class CheckoutPage {
   protected readonly total = computed(() => this.cart.subtotal() + this.shippingFee());
 
   constructor() {
+    const language = this.localization.currentLanguage();
+    this.seo.setNoIndexPage({
+      title: language === 'ar' ? 'إتمام الطلب | كابوماتيك' : 'Checkout | Kapomatic',
+      description: language === 'ar' ? 'أكمل بيانات التوصيل والدفع.' : 'Complete delivery and payment details.',
+      path: this.urls.localizedCheckout(language),
+      language,
+      follow: false
+    });
+
     this.checkoutService
       .getShippingSettings()
       .pipe(finalize(() => this.loadingGovernments.set(false)))

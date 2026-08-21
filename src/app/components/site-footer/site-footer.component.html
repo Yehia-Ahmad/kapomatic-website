@@ -18,7 +18,7 @@
       </div>
 
       <nav class="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-ink-700" aria-label="روابط التذييل">
-        <a class="hover:text-ink-900" routerLink="/locations">أين تجدنا</a>
+        <a class="hover:text-ink-900" [routerLink]="urls.localizedLocations(localization.currentLanguage())">أين تجدنا</a>
       </nav>
     </div>
     <div class="mt-2 text-center text-xs text-ink-500">Copyright 2026 — All rights reserved ©</div>

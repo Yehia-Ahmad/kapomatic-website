@@ -9,6 +9,8 @@ import { CartService } from '../../services/cart.service';
 import { EcommerceProduct, EcommerceService } from '../../services/ecommerce.service';
 import { GeneralSettingsService } from '../../services/general-settings.service';
 import { SeoService } from '../../services/seo.service';
+import { LocalizationService } from '../../services/localization.service';
+import { LanguageCode, UrlService } from '../../services/url.service';
 
 type TabKey = 'specs' | 'reviews' | 'fitment';
 
@@ -24,6 +26,8 @@ export class ProductDetailPage {
   protected readonly generalSettings = inject(GeneralSettingsService);
   private readonly seo = inject(SeoService);
   private readonly destroyRef = inject(DestroyRef);
+  protected readonly localization = inject(LocalizationService);
+  protected readonly urls = inject(UrlService);
 
   protected readonly activeTab = signal<TabKey>('specs');
   protected readonly quantity = signal(1);
@@ -33,6 +37,7 @@ export class ProductDetailPage {
   protected readonly loadError = signal('');
   protected readonly activeImageId = signal('');
   protected readonly categoryName = signal('');
+  protected readonly language = signal<LanguageCode>('ar');
 
   protected readonly activeImage = computed(() => {
     const product = this.product();
@@ -74,6 +79,13 @@ export class ProductDetailPage {
   }
 
   private loadProductFromRoute() {
+    this.language.set(this.localization.languageFromSnapshot(this.route.snapshot));
+    const slug = this.route.snapshot.paramMap.get('slug') ?? '';
+    if (slug) {
+      this.loadProductBySlug(slug);
+      return;
+    }
+
     const productId = this.route.snapshot.paramMap.get('id') ?? '';
     const categoryId = this.route.snapshot.queryParamMap.get('categoryId') ?? this.categoryId();
 
@@ -125,12 +137,75 @@ export class ProductDetailPage {
         next: (product) => {
           this.product.set(product);
           this.activeImageId.set(product.images[0]?.id ?? '');
-          this.seo.setProductPage(product, this.categoryName());
+          this.seo.setProductPage(product, this.categoryName(), this.language());
           this.loading.set(false);
         },
         error: () => {
           this.product.set(null);
           this.loadError.set('تعذر تحميل بيانات المنتج حالياً.');
+          this.loading.set(false);
+        }
+      });
+  }
+
+  private loadProductBySlug(slug: string) {
+    this.loading.set(true);
+    this.loadError.set('');
+
+    this.ecommerceService
+      .getPublicProductBySlug(this.language(), slug)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: ({ product, seo }) => {
+          this.product.set(product);
+          this.categoryId.set(product.categoryId ?? '');
+          this.categoryName.set(product.categoryTitle ?? '');
+          this.activeImageId.set(product.images[0]?.id ?? '');
+          const canonicalPath = this.urls.localizedProduct(this.language(), product.slug || slug);
+          const arSlug = product.alternateSlugs?.ar;
+          const enSlug = product.alternateSlugs?.en;
+          const canonicalUrl = this.urls.absoluteUrl(canonicalPath);
+          const price = this.seo.visibleProductPrice(product);
+          this.seo.setPage(
+            this.seo.fromBackend(seo ?? product.seo, {
+              title: `${product.title} | ${this.language() === 'ar' ? 'كابوماتيك' : 'Kapomatic'}`,
+              description: product.description || product.subTitle || product.title,
+              canonicalUrl,
+              language: this.language(),
+              image: product.imageSrc,
+              type: 'product',
+              alternateUrls: {
+                ar: arSlug ? this.urls.absoluteUrl(this.urls.localizedProduct('ar', arSlug)) : undefined,
+                en: enSlug ? this.urls.absoluteUrl(this.urls.localizedProduct('en', enSlug)) : undefined,
+                xDefault: arSlug ? this.urls.absoluteUrl(this.urls.localizedProduct('ar', arSlug)) : undefined
+              },
+              structuredData: [
+                this.seo.breadcrumbStructuredData([
+                  { name: this.language() === 'ar' ? 'الرئيسية' : 'Home', url: this.urls.localizedHome(this.language()) },
+                  {
+                    name: product.categoryTitle || (this.language() === 'ar' ? 'المنتجات' : 'Products'),
+                    url: product.categorySlug
+                      ? this.urls.localizedCategory(this.language(), product.categorySlug)
+                      : this.urls.localizedSearch(this.language())
+                  },
+                  { name: product.title, url: canonicalPath }
+                ]),
+                this.seo.productStructuredData(product, product.categoryTitle, price, canonicalUrl)
+              ]
+            })
+          );
+          this.loading.set(false);
+        },
+        error: () => {
+          this.product.set(null);
+          this.loadError.set('تعذر تحميل بيانات المنتج حالياً.');
+          this.seo.setNoIndexPage({
+            title: this.language() === 'ar' ? 'المنتج غير موجود | كابوماتيك' : 'Product Not Found | Kapomatic',
+            description: this.language() === 'ar' ? 'المنتج المطلوب غير متاح.' : 'The requested product is not available.',
+            path: this.route.snapshot.url.map((part) => part.path).join('/'),
+            language: this.language(),
+            follow: false
+          });
           this.loading.set(false);
         }
       });

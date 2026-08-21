@@ -1,9 +1,9 @@
-<div dir="rtl" class="flex min-h-screen flex-col bg-surface-50 text-ink-900">
+<div [attr.dir]="localization.currentDirection()" class="flex min-h-screen flex-col bg-surface-50 text-ink-900">
   <app-site-header [showSearch]="false" />
 
   <div class="border-b border-line-200 bg-surface-0">
     <div class="mx-auto flex max-w-6xl items-center gap-2 px-4 py-2 text-xs text-ink-500">
-      <a routerLink="/">الرئيسية</a><span>›</span><span class="text-ink-700">أين تجدنا</span>
+      <a [routerLink]="urls.localizedHome(localization.currentLanguage())">الرئيسية</a><span>›</span><span class="text-ink-700">أين تجدنا</span>
     </div>
   </div>
 

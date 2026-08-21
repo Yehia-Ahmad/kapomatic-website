@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { UrlService } from './url.service';
 
 export type GovernmentShipping = {
   name: string;
@@ -46,9 +47,14 @@ export type CheckoutResult = {
 @Injectable({ providedIn: 'root' })
 export class CheckoutService {
   private readonly http = inject(HttpClient);
+  private readonly urls = inject(UrlService);
   private readonly apiBaseUrl = environment.api_base_url.replace(/\/+$/, '');
 
   getShippingSettings(): Observable<ShippingSettings> {
+    if (!this.urls.apiConfigured()) return new Observable<ShippingSettings>((subscriber) => {
+      subscriber.next({ governments: [], freeShippingMinimum: null });
+      subscriber.complete();
+    });
     return this.http
       .get<unknown>(`${this.apiBaseUrl}/ecommerce-settings/shipping/governments`)
       .pipe(map((response) => this.mapShippingSettings(response)));

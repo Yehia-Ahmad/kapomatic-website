@@ -3,6 +3,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterModule } from '@angular/router';
 import { EcommerceService, HomePageCategory } from '../../services/ecommerce.service';
 import { GeneralSettingsService } from '../../services/general-settings.service';
+import { LocalizationService } from '../../services/localization.service';
+import { UrlService } from '../../services/url.service';
 
 @Component({
   selector: 'app-home-category-products',
@@ -14,6 +16,8 @@ export class HomeCategoryProductsComponent {
   private readonly ecommerceService = inject(EcommerceService);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly generalSettings = inject(GeneralSettingsService);
+  protected readonly localization = inject(LocalizationService);
+  private readonly urls = inject(UrlService);
 
   protected readonly categories = signal<HomePageCategory[]>([]);
   protected readonly loading = signal(true);
@@ -33,5 +37,13 @@ export class HomeCategoryProductsComponent {
           this.loading.set(false);
         }
       });
+  }
+
+  protected categoryLink(category: HomePageCategory): string {
+    return this.urls.localizedCategory(this.localization.currentLanguage(), category.slug || category.id);
+  }
+
+  protected productLink(product: { id: string; slug?: string }): string {
+    return this.urls.localizedProduct(this.localization.currentLanguage(), product.slug || product.id);
   }
 }

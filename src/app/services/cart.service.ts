@@ -5,6 +5,7 @@ import { GeneralSettingsService } from './general-settings.service';
 
 export type CartItem = {
   id: string;
+  slug?: string;
   categoryId?: string;
   title: string;
   subtitle?: string;
@@ -53,6 +54,7 @@ export class CartService {
         ...items,
         {
           id: product.id,
+          slug: product.slug,
           categoryId: product.categoryId,
           title: product.title,
           subtitle: product.subTitle || product.brand,

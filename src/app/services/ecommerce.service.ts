@@ -1,8 +1,10 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Injectable, PLATFORM_ID, inject } from '@angular/core';
+import { Injectable, PLATFORM_ID, TransferState, inject, makeStateKey } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { Observable, catchError, forkJoin, map, of, switchMap } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { BackendSeo } from './seo.service';
+import { LanguageCode, UrlService } from './url.service';
 
 export type ProductSpec = {
   label: string;
@@ -13,13 +15,21 @@ export type ProductImage = {
   id: string;
   src: string;
   alt: string;
+  width?: number;
+  height?: number;
 };
 
 export type EcommerceProduct = {
   id: string;
+  slug?: string;
+  code?: string;
+  sku?: string;
   categoryId?: string;
+  categorySlug?: string;
+  categoryTitle?: string;
   title: string;
   subTitle: string;
+  description?: string;
   brand: string;
   price: number;
   retailPrice: number;
@@ -30,18 +40,27 @@ export type EcommerceProduct = {
   rating: number;
   reviewsCount: number;
   imageSrc: string;
+  imageAlt?: string;
   images: ProductImage[];
+  inventoryCount?: number;
   inStock: boolean;
   shippingNote: string;
   specs: ProductSpec[];
+  seo?: BackendSeo;
+  alternateSlugs?: Partial<Record<LanguageCode, string>>;
 };
 
 export type EcommerceCategory = {
   id: string;
+  slug?: string;
   title: string;
   subtitle: string;
+  description?: string;
   imageSrc: string;
+  imageAlt?: string;
   products: EcommerceProduct[];
+  seo?: BackendSeo;
+  alternateSlugs?: Partial<Record<LanguageCode, string>>;
 };
 
 export type SpecificationFilter = {
@@ -72,6 +91,7 @@ export type ProductPagination = {
 export type ProductPageResult = {
   products: EcommerceProduct[];
   pagination: ProductPagination;
+  seo?: BackendSeo;
 };
 
 export type ProductSortKey = 'relevance' | 'price_asc' | 'price_desc' | 'rating_desc';
@@ -80,24 +100,142 @@ export type HomePageCategory = EcommerceCategory & {
   products: EcommerceProduct[];
 };
 
+export interface PublicApiEnvelope<T> {
+  data: T;
+  seo?: BackendSeo;
+}
+
+export interface PublicCategoryResponse {
+  category: EcommerceCategory;
+  seo?: BackendSeo;
+}
+
+export interface PublicProductResponse {
+  product: EcommerceProduct;
+  seo?: BackendSeo;
+}
+
+export interface SlugAliasResult {
+  redirectTo: string;
+  statusCode: 301;
+}
+
 @Injectable({ providedIn: 'root' })
 export class EcommerceService {
   private readonly http = inject(HttpClient);
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly transferState = inject(TransferState);
+  private readonly urls = inject(UrlService);
   private readonly apiBaseUrl = environment.api_base_url;
   private readonly isBrowser = isPlatformBrowser(this.platformId);
 
-  getActiveCategoriesWithProductsAndSettings(): Observable<EcommerceCategory[]> {
-    if (!this.isBrowser) return of([]);
+  getPublicCategoryBySlug(language: LanguageCode, slug: string): Observable<PublicCategoryResponse> {
+    if (!this.urls.apiConfigured()) {
+      return of({ category: { id: '', slug, title: '', subtitle: '', imageSrc: '', products: [] } });
+    }
+    const key = makeStateKey<PublicCategoryResponse>(`public-category:${language}:${slug}`);
+    return this.withTransferState(
+      key,
+      this.http.get<unknown>(this.apiUrl(`public/${language}/categories/${encodeURIComponent(slug)}`)).pipe(
+        map((response) => {
+          const envelope = this.envelope(response);
+          return {
+            category: this.mapCategory(envelope.data),
+            seo: envelope.seo
+          };
+        })
+      )
+    );
+  }
 
+  getPublicCategoryProductsBySlug(
+    language: LanguageCode,
+    slug: string,
+    filters: SpecificationFilter[] = [],
+    page = 1,
+    limit = 12,
+    sort: ProductSortKey = 'relevance'
+  ): Observable<ProductPageResult> {
+    if (!this.urls.apiConfigured()) return of(this.emptyProductPage(page, limit));
+    let params = new HttpParams().set('page', String(page)).set('limit', String(limit));
+    if (sort !== 'relevance') params = params.set('sort', sort);
+    for (const filter of filters) {
+      if (!filter.specification || !filter.value) continue;
+      params = params.append('specification', filter.specification).append('value', filter.value);
+    }
+
+    const key = makeStateKey<ProductPageResult>(
+      `public-category-products:${language}:${slug}:${page}:${limit}:${sort}:${JSON.stringify(filters)}`
+    );
+    return this.withTransferState(
+      key,
+      this.http
+        .get<unknown>(this.apiUrl(`public/${language}/categories/${encodeURIComponent(slug)}/products`), { params })
+        .pipe(map((response) => this.mapProductPageResult(response, undefined, page, limit)))
+    );
+  }
+
+  getPublicProductBySlug(language: LanguageCode, slug: string): Observable<PublicProductResponse> {
+    if (!this.urls.apiConfigured()) return of({ product: this.emptyProduct(slug, '') });
+    const key = makeStateKey<PublicProductResponse>(`public-product:${language}:${slug}`);
+    return this.withTransferState(
+      key,
+      this.http.get<unknown>(this.apiUrl(`public/${language}/products/${encodeURIComponent(slug)}`)).pipe(
+        map((response) => {
+          const envelope = this.envelope(response);
+          return {
+            product: this.mapProduct(envelope.data),
+            seo: envelope.seo
+          };
+        })
+      )
+    );
+  }
+
+  searchPublicProducts(language: LanguageCode, q: string, page = 1, limit = 12): Observable<ProductPageResult> {
+    if (!this.urls.apiConfigured()) return of(this.emptyProductPage(page, limit));
+    if (!q.trim()) {
+      return of(this.emptyProductPage(page, limit));
+    }
+
+    const params = new HttpParams().set('q', q.trim()).set('page', String(page)).set('limit', String(limit));
+    const key = makeStateKey<ProductPageResult>(`public-search:${language}:${q.trim()}:${page}:${limit}`);
+    return this.withTransferState(
+      key,
+      this.http
+        .get<unknown>(this.apiUrl('public/products/search'), { params })
+        .pipe(map((response) => this.mapProductPageResult(response, undefined, page, limit, language)))
+    );
+  }
+
+  resolveSlugAlias(
+    language: LanguageCode,
+    entityType: 'category' | 'product',
+    oldSlug: string
+  ): Observable<SlugAliasResult | null> {
+    return this.http
+      .get<unknown>(
+        this.apiUrl(`public/${language}/slug-aliases/${entityType}/${encodeURIComponent(oldSlug)}`)
+      )
+      .pipe(
+        map((response) => {
+          const item = this.asRecord(this.readObject(response));
+          const redirectTo = this.readString(item, ['redirectTo', 'url', 'location', 'canonicalUrl']);
+          return redirectTo ? { redirectTo, statusCode: 301 as const } : null;
+        }),
+        catchError(() => of(null))
+      );
+  }
+
+  getActiveCategoriesWithProductsAndSettings(): Observable<EcommerceCategory[]> {
+    if (!this.urls.apiConfigured()) return of([]);
     return this.http
       .get<unknown>(this.apiUrl('ecommerce-settings/categories/active'))
       .pipe(map((response) => this.readArray(response).map((category) => this.mapCategory(category))));
   }
 
   getHomePageCategories(): Observable<HomePageCategory[]> {
-    if (!this.isBrowser) return of([]);
-
+    if (!this.urls.apiConfigured()) return of([]);
     return this.http.get<unknown>(this.apiUrl('ecommerce-settings/home-page/categories')).pipe(
       map((response) => this.mapOrderedHomeCategories(response)),
       switchMap((categories) => {
@@ -128,20 +266,7 @@ export class EcommerceService {
     limit = 12,
     sort: ProductSortKey = 'relevance'
   ): Observable<ProductPageResult> {
-    if (!this.isBrowser) {
-      return of({
-        products: [],
-        pagination: {
-          page,
-          limit,
-          totalItems: 0,
-          totalPages: 1,
-          hasNextPage: false,
-          hasPrevPage: page > 1
-        }
-      });
-    }
-
+    if (!this.urls.apiConfigured()) return of(this.emptyProductPage(page, limit));
     let params = new HttpParams().set('page', String(page)).set('limit', String(limit));
     if (sort !== 'relevance') params = params.set('sort', sort);
 
@@ -158,18 +283,9 @@ export class EcommerceService {
   }
 
   searchActiveProducts(q: string, page = 1, limit = 12): Observable<ProductPageResult> {
-    if (!this.isBrowser || !q.trim()) {
-      return of({
-        products: [],
-        pagination: {
-          page,
-          limit,
-          totalItems: 0,
-          totalPages: 1,
-          hasNextPage: false,
-          hasPrevPage: page > 1
-        }
-      });
+    if (!this.urls.apiConfigured()) return of(this.emptyProductPage(page, limit));
+    if (!q.trim()) {
+      return of(this.emptyProductPage(page, limit));
     }
 
     const params = new HttpParams().set('q', q.trim()).set('page', String(page)).set('limit', String(limit));
@@ -180,16 +296,14 @@ export class EcommerceService {
   }
 
   getCategoryFilters(categoryId: string): Observable<CategoryFiltersResult> {
-    if (!this.isBrowser) return of({ filters: [], products: [] });
-
+    if (!this.urls.apiConfigured()) return of({ filters: [], products: [] });
     return this.http
       .get<unknown>(this.apiUrl(`ecommerce-settings/categories/${categoryId}/filters`))
       .pipe(map((response) => this.mapCategoryFiltersResult(response, categoryId)));
   }
 
   getProductByActiveCategory(categoryId: string, productId: string): Observable<EcommerceProduct> {
-    if (!this.isBrowser) return of(this.emptyProduct(productId, categoryId));
-
+    if (!this.urls.apiConfigured()) return of(this.emptyProduct(productId, categoryId));
     return this.http
       .get<unknown>(
         this.apiUrl(`ecommerce-settings/categories/active/${categoryId}/products/${productId}`)
@@ -202,7 +316,21 @@ export class EcommerceService {
   }
 
   private apiUrl(path: string): string {
-    return `${this.apiBaseUrl.replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`;
+    return this.urls.apiUrl(path);
+  }
+
+  private emptyProductPage(page: number, limit: number): ProductPageResult {
+    return {
+      products: [],
+      pagination: {
+        page,
+        limit,
+        totalItems: 0,
+        totalPages: 1,
+        hasNextPage: false,
+        hasPrevPage: page > 1
+      }
+    };
   }
 
   private mapOrderedHomeCategories(source: unknown): HomePageCategory[] {
@@ -226,6 +354,9 @@ export class EcommerceService {
   private mapCategory(source: unknown): EcommerceCategory {
     const item = this.asRecord(source);
     const id = this.readString(item, ['id', '_id', 'categoryId', 'category.id', 'category._id']);
+    const translations = this.asRecord(item['translations']);
+    const ar = this.asRecord(translations['ar']);
+    const en = this.asRecord(translations['en']);
     const title = this.readString(item, ['name', 'title', 'categoryName', 'category.name', 'category.title']);
     const products = this.readArray(
       item['products'] ??
@@ -237,10 +368,15 @@ export class EcommerceService {
 
     return {
       id,
+      slug: this.readString(item, ['slug']) || this.readString(ar, ['slug']) || this.readString(en, ['slug']),
       title: title || 'قسم',
-      subtitle: this.readString(item, ['description', 'subtitle', 'category.description']),
+      subtitle: this.readString(item, ['shortDescription', 'description', 'subtitle', 'category.description']),
+      description: this.readString(item, ['description', 'longDescription', 'category.description']),
       imageSrc: this.readString(item, ['image', 'imageUrl', 'imageSrc', 'photo', 'category.image', 'category.imageUrl']),
-      products
+      imageAlt: this.readString(item, ['imageAlt']) || title || 'قسم',
+      products,
+      seo: this.readSeo(item['seo']),
+      alternateSlugs: this.readAlternateSlugs(item)
     };
   }
 
@@ -277,9 +413,11 @@ export class EcommerceService {
     source: unknown,
     categoryId: string | undefined,
     requestedPage: number,
-    requestedLimit: number
+    requestedLimit: number,
+    language?: LanguageCode
   ): ProductPageResult {
-    const products = this.readArray(source).map((product) => this.mapProduct(product, categoryId));
+    const envelope = this.envelope(source);
+    const products = this.readArray(envelope.data ?? source).map((product) => this.mapProduct(product, categoryId, language));
     const object = this.asRecord(this.readObject(source));
     const paginationSource = this.asRecord(object['pagination']);
     const page = this.readNumber(paginationSource, ['page']) || requestedPage;
@@ -290,6 +428,7 @@ export class EcommerceService {
 
     return {
       products,
+      seo: envelope.seo,
       pagination: {
         page,
         limit,
@@ -356,6 +495,7 @@ export class EcommerceService {
   private emptyProduct(productId: string, categoryId: string): EcommerceProduct {
     return {
       id: productId,
+      slug: productId,
       categoryId,
       title: '',
       subTitle: '',
@@ -369,17 +509,28 @@ export class EcommerceService {
       rating: 0,
       reviewsCount: 0,
       imageSrc: '',
+      imageAlt: '',
       images: [],
+      inventoryCount: 0,
       inStock: false,
       shippingNote: '',
       specs: []
     };
   }
 
-  private mapProduct(source: unknown, categoryId?: string): EcommerceProduct {
+  private mapProduct(source: unknown, categoryId?: string, language?: LanguageCode): EcommerceProduct {
     const item = this.asRecord(source);
+    const product = this.asRecord(item['product']);
+    const translations = this.asRecord(item['translations'] ?? product['translations']);
+    const ar = this.asRecord(translations['ar']);
+    const en = this.asRecord(translations['en']);
     const id = this.readString(item, ['id', '_id', 'productId', 'product.id', 'product._id']);
-    const title = this.readString(item, ['name', 'title', 'productName', 'product.name', 'product.title']);
+    const preferredTranslation = language ? this.asRecord(translations[language]) : {};
+    const fallbackTranslation = language === 'en' ? ar : en;
+    const title =
+      this.readString(preferredTranslation, ['name']) ||
+      this.readString(fallbackTranslation, ['name']) ||
+      this.readString(item, ['name', 'title', 'productName', 'product.name', 'product.title']);
     const images = this.readImages(item, title);
     const specs = this.readSpecs(item);
     const price = this.readNumber(item, ['price', 'salePrice', 'retailPrice', 'regularPrice', 'ecommercePrice']);
@@ -387,14 +538,33 @@ export class EcommerceService {
     const discountPercentage = this.readOptionalNumber(item, ['discountPercentage']);
     const priceAfterDiscount = this.readOptionalNumber(item, ['priceAfterDiscount']);
     const hasDiscount = discountPercentage !== null && discountPercentage > 0 && priceAfterDiscount !== null;
+    const inventoryCount = this.readOptionalNumber(item, ['inventoryCount', 'stock', 'availableQuantity']);
 
     return {
       id,
+      slug:
+        this.readString(preferredTranslation, ['slug']) ||
+        this.readString(fallbackTranslation, ['slug']) ||
+        this.readString(item, ['slug']) ||
+        this.readString(ar, ['slug']) ||
+        this.readString(en, ['slug']) ||
+        id,
+      code: this.readString(item, ['code', 'sku', 'product.code', 'product.sku']),
+      sku: this.readString(item, ['sku', 'code', 'product.sku', 'product.code']),
       categoryId:
         categoryId ||
         this.readString(item, ['categoryId', 'category', 'category.id', 'category._id', 'categoryId._id', 'categoryId.id']),
+      categorySlug: this.readString(item, ['categorySlug', 'category.slug', 'category.translations.ar.slug', 'category.translations.en.slug']),
+      categoryTitle: this.readString(item, ['categoryTitle', 'categoryName', 'category.name', 'category.title']),
       title: title || 'منتج',
-      subTitle: this.readString(item, ['subTitle', 'subtitle', 'description', 'shortDescription']),
+      subTitle:
+        this.readString(preferredTranslation, ['shortDescription']) ||
+        this.readString(fallbackTranslation, ['shortDescription']) ||
+        this.readString(item, ['subTitle', 'subtitle', 'description', 'shortDescription']),
+      description:
+        this.readString(preferredTranslation, ['description']) ||
+        this.readString(fallbackTranslation, ['description']) ||
+        this.readString(item, ['description', 'longDescription']),
       brand: this.readString(item, ['brand', 'brand.name', 'manufacturer', 'manufacturer.name']),
       price,
       retailPrice,
@@ -405,10 +575,17 @@ export class EcommerceService {
       rating: this.readNumber(item, ['rating', 'averageRating', 'reviewsSummary.rating']),
       reviewsCount: this.readNumber(item, ['reviewsCount', 'reviewCount', 'reviewsSummary.count']),
       imageSrc: images[0]?.src || '',
+      imageAlt: images[0]?.alt || title || 'منتج',
       images,
-      inStock: this.readBoolean(item, ['inStock', 'isAvailable', 'available', 'stockStatus'], true),
+      inventoryCount: inventoryCount ?? undefined,
+      inStock:
+        inventoryCount !== null
+          ? inventoryCount > 0
+          : this.readBoolean(item, ['inStock', 'isAvailable', 'available', 'stockStatus'], true),
       shippingNote: this.readString(item, ['shippingNote', 'deliveryNote']),
-      specs
+      specs,
+      seo: this.readSeo(item['seo']),
+      alternateSlugs: this.readAlternateSlugs(item)
     };
   }
 
@@ -425,20 +602,25 @@ export class EcommerceService {
     const imageItems = Array.isArray(rawImages) ? rawImages : rawImages ? [rawImages] : [];
 
     return imageItems
-      .map((image, index) => {
+      .map<ProductImage | null>((image, index) => {
         const record = this.asRecord(image);
         const src =
           typeof image === 'string'
             ? image
             : this.readString(record, ['url', 'src', 'image', 'imageUrl', 'path', 'secure_url']);
 
-        return src
-          ? {
-              id: this.readString(record, ['id', '_id']) || `img-${index + 1}`,
-              src,
-              alt: this.readString(record, ['alt', 'name', 'title']) || title
-            }
-          : null;
+        if (!src) return null;
+
+        const result: ProductImage = {
+          id: this.readString(record, ['id', '_id']) || `img-${index + 1}`,
+          src,
+          alt: this.readString(record, ['alt', 'imageAlt', 'name', 'title']) || title
+        };
+        const width = this.readOptionalNumber(record, ['width']);
+        const height = this.readOptionalNumber(record, ['height']);
+        if (width !== null) result.width = width;
+        if (height !== null) result.height = height;
+        return result;
       })
       .filter((image): image is ProductImage => Boolean(image));
   }
@@ -491,6 +673,80 @@ export class EcommerceService {
       if (object[key] && !Array.isArray(object[key])) return object[key];
     }
     return source;
+  }
+
+  private envelope(source: unknown): PublicApiEnvelope<unknown> {
+    const root = this.asRecord(source);
+    const data = root['data'] ?? root['result'] ?? root['item'] ?? root['category'] ?? root['product'] ?? source;
+    return {
+      data,
+      seo: this.readSeo(root['seo'])
+    };
+  }
+
+  private readSeo(source: unknown): BackendSeo | undefined {
+    const item = this.asRecord(source);
+    if (Object.keys(item).length === 0) return undefined;
+    return {
+      metaTitle: this.readString(item, ['metaTitle', 'title']),
+      title: this.readString(item, ['title']),
+      metaDescription: this.readString(item, ['metaDescription', 'description']),
+      description: this.readString(item, ['description']),
+      keywords: this.readStringArray(item, ['keywords']),
+      robots: this.readString(item, ['robots']),
+      robotsIndex: this.readOptionalBoolean(item, ['robotsIndex', 'index']),
+      robotsFollow: this.readOptionalBoolean(item, ['robotsFollow', 'follow']),
+      ogTitle: this.readString(item, ['ogTitle']),
+      ogDescription: this.readString(item, ['ogDescription']),
+      ogImage: this.readString(item, ['ogImage']),
+      twitterTitle: this.readString(item, ['twitterTitle']),
+      twitterDescription: this.readString(item, ['twitterDescription']),
+      twitterImage: this.readString(item, ['twitterImage'])
+    };
+  }
+
+  private readAlternateSlugs(item: Record<string, unknown>): Partial<Record<LanguageCode, string>> {
+    const alternates = this.asRecord(item['alternateSlugs'] ?? item['alternates']);
+    const translations = this.asRecord(item['translations']);
+    return {
+      ar:
+        this.readString(alternates, ['ar', 'ar.slug', 'arSlug']) ||
+        this.readString(this.asRecord(translations['ar']), ['slug']) ||
+        undefined,
+      en:
+        this.readString(alternates, ['en', 'en.slug', 'enSlug']) ||
+        this.readString(this.asRecord(translations['en']), ['slug']) ||
+        undefined
+    };
+  }
+
+  private readOptionalBoolean(object: Record<string, unknown>, paths: string[]): boolean | undefined {
+    for (const path of paths) {
+      const value = this.readPath(object, path);
+      if (typeof value === 'boolean') return value;
+      if (typeof value === 'number') return value > 0;
+      if (typeof value === 'string') {
+        const normalized = value.toLowerCase();
+        if (['true', 'yes', '1'].includes(normalized)) return true;
+        if (['false', 'no', '0'].includes(normalized)) return false;
+      }
+    }
+    return undefined;
+  }
+
+  private withTransferState<T>(key: ReturnType<typeof makeStateKey<T>>, request: Observable<T>): Observable<T> {
+    if (this.transferState.hasKey(key)) {
+      const value = this.transferState.get(key, null as T | null);
+      this.transferState.remove(key);
+      return of(value as T);
+    }
+
+    return request.pipe(
+      map((value) => {
+        if (!this.isBrowser) this.transferState.set(key, value);
+        return value;
+      })
+    );
   }
 
   private readString(object: Record<string, unknown>, paths: string[]): string {

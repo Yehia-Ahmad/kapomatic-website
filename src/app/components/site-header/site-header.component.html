@@ -1,6 +1,6 @@
 <header [style.background-color]="generalSettings.settings().mainColor">
   <div class="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
-    <a routerLink="/" class="flex shrink-0 items-center text-lg font-extrabold tracking-wide text-ink-900" aria-label="الرئيسية">
+    <a [routerLink]="urls.localizedHome(localization.currentLanguage())" class="flex shrink-0 items-center text-lg font-extrabold tracking-wide text-ink-900" aria-label="الرئيسية">
       @if (generalSettings.settings().mainLogo) {
         <img class="h-11 w-auto max-w-40 object-contain" [src]="generalSettings.settings().mainLogo" alt="شعار المتجر" />
       } @else {
@@ -84,7 +84,7 @@
             </div>
             <div class="mt-3 text-base font-extrabold">سلة التسوق فارغة</div>
             <a
-              routerLink="/products"
+              [routerLink]="urls.localizedSearch(localization.currentLanguage())"
               class="mt-4 inline-flex rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-extrabold text-ink-900 shadow-sm transition hover:bg-brand-700"
               (click)="closeDrawer()"
             >
@@ -98,8 +98,7 @@
                 <div class="grid grid-cols-[76px_1fr_auto] gap-3">
                   <a
                     class="grid h-28 place-items-center rounded-lg bg-surface-50 p-2"
-                    [routerLink]="['/products', item.id]"
-                    [queryParams]="{ categoryId: item.categoryId }"
+                    [routerLink]="urls.localizedProduct(localization.currentLanguage(), item.slug || item.id)"
                     (click)="closeDrawer()"
                   >
                     @if (item.imageSrc) {
@@ -113,8 +112,7 @@
                     <div class="flex items-start gap-2">
                       <a
                         class="line-clamp-2 flex-1 text-sm font-extrabold leading-5 text-brand-700 hover:text-ink-900"
-                        [routerLink]="['/products', item.id]"
-                        [queryParams]="{ categoryId: item.categoryId }"
+                        [routerLink]="urls.localizedProduct(localization.currentLanguage(), item.slug || item.id)"
                         (click)="closeDrawer()"
                       >
                         {{ item.title }}
@@ -189,7 +187,7 @@
       @if (cart.items().length > 0) {
         <div class="border-t border-line-200 p-5">
           <a
-            routerLink="/checkout"
+            [routerLink]="urls.localizedCheckout(localization.currentLanguage())"
             class="flex h-11 w-full items-center justify-center gap-4 rounded-lg bg-brand-700 px-4 text-sm font-extrabold text-white shadow-sm transition hover:bg-brand-900"
             (click)="closeDrawer()"
           >

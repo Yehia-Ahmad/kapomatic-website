@@ -1,4 +1,4 @@
-<div dir="rtl" class="flex min-h-screen flex-col bg-surface-50 text-ink-900">
+<div [attr.dir]="localization.currentDirection()" class="flex min-h-screen flex-col bg-surface-50 text-ink-900">
   <app-site-header [showSearch]="false" />
 
   @if (toast()) {
@@ -25,7 +25,7 @@
 
   <div class="border-b border-line-200 bg-surface-0">
     <div class="mx-auto flex max-w-6xl items-center gap-2 px-4 py-2 text-xs text-ink-500">
-      <a routerLink="/">الرئيسية</a><span>›</span><a routerLink="/cart">سلة التسوق</a><span>›</span>
+      <a [routerLink]="urls.localizedHome(localization.currentLanguage())">الرئيسية</a><span>›</span><a [routerLink]="urls.localizedCart(localization.currentLanguage())">سلة التسوق</a><span>›</span>
       <span class="text-ink-700">إتمام الطلب</span>
     </div>
   </div>
@@ -48,7 +48,7 @@
           </p>
         }
         <a
-          routerLink="/products"
+          [routerLink]="urls.localizedSearch(localization.currentLanguage())"
           class="mt-6 inline-flex rounded-xl bg-brand-600 px-6 py-3 font-extrabold hover:bg-brand-700"
           >متابعة التسوق</a
         >
@@ -60,7 +60,7 @@
         <i class="fa-solid fa-cart-shopping text-3xl text-ink-300" aria-hidden="true"></i>
         <h1 class="mt-4 text-xl font-extrabold">سلة التسوق فارغة</h1>
         <a
-          routerLink="/products"
+          [routerLink]="urls.localizedSearch(localization.currentLanguage())"
           class="mt-5 inline-flex rounded-xl bg-brand-600 px-5 py-3 font-extrabold hover:bg-brand-700"
           >تصفح المنتجات</a
         >

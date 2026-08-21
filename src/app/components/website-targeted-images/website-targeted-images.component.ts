@@ -5,6 +5,8 @@ import {
   TargetedWebsiteImage,
   WebsiteImagesService
 } from '../../services/website-images.service';
+import { LocalizationService } from '../../services/localization.service';
+import { UrlService } from '../../services/url.service';
 
 @Component({
   selector: 'app-website-targeted-images',
@@ -14,6 +16,8 @@ import {
 })
 export class WebsiteTargetedImagesComponent implements OnDestroy {
   private readonly websiteImagesService = inject(WebsiteImagesService);
+  private readonly localization = inject(LocalizationService);
+  private readonly urls = inject(UrlService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly platformId = inject(PLATFORM_ID);
   private autoplayTimer?: ReturnType<typeof setInterval>;
@@ -64,7 +68,7 @@ export class WebsiteTargetedImagesComponent implements OnDestroy {
   }
 
   protected imageLink(image: TargetedWebsiteImage): unknown[] {
-    return ['/products'];
+    return [this.urls.localizedSearch(this.localization.currentLanguage())];
   }
 
   protected imageQueryParams(image: TargetedWebsiteImage): Params | null {

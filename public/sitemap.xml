@@ -1,18 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://kapomatic.com/</loc>
-    <changefreq>weekly</changefreq>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>https://kapomatic.com/products</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://kapomatic.com/locations</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-</urlset>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap><loc>{{WEBSITE_ORIGIN}}/sitemaps/pages-ar.xml</loc></sitemap>
+  <sitemap><loc>{{WEBSITE_ORIGIN}}/sitemaps/pages-en.xml</loc></sitemap>
+  <sitemap><loc>{{WEBSITE_ORIGIN}}/sitemaps/categories-ar.xml</loc></sitemap>
+  <sitemap><loc>{{WEBSITE_ORIGIN}}/sitemaps/categories-en.xml</loc></sitemap>
+  <sitemap><loc>{{WEBSITE_ORIGIN}}/sitemaps/products-ar.xml</loc></sitemap>
+  <sitemap><loc>{{WEBSITE_ORIGIN}}/sitemaps/products-en.xml</loc></sitemap>
+  <sitemap><loc>{{WEBSITE_ORIGIN}}/sitemaps/images.xml</loc></sitemap>
+</sitemapindex>

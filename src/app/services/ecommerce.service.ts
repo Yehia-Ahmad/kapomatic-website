@@ -291,7 +291,7 @@ export class EcommerceService {
     const params = new HttpParams().set('q', q.trim()).set('page', String(page)).set('limit', String(limit));
 
     return this.http
-      .get<unknown>(this.apiUrl('ecommerce-settings/products/search'), { params })
+      .get<unknown>(this.apiUrl('public/products/search'), { params })
       .pipe(map((response) => this.mapProductPageResult(response, undefined, page, limit)));
   }
 

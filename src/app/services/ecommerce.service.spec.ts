@@ -73,4 +73,23 @@ describe('EcommerceService public search', () => {
       pagination: { page: 1, limit: 10, totalItems: 1, totalPages: 1 }
     });
   });
+
+  it('routes legacy active product search through the unified public endpoint', () => {
+    service.searchActiveProducts('فور', 2, 5).subscribe((result) => {
+      expect(result.pagination.page).toBe(2);
+      expect(result.products.length).toBe(0);
+    });
+
+    const request = httpMock.expectOne((req) => req.url.endsWith('/api/public/products/search'));
+    expect(request.request.url).not.toContain('/api/ecommerce-settings/products/search');
+    expect(request.request.params.keys().sort()).toEqual(['limit', 'page', 'q']);
+    expect(request.request.params.get('q')).toBe('فور');
+    expect(request.request.params.get('page')).toBe('2');
+    expect(request.request.params.get('limit')).toBe('5');
+    request.flush({
+      success: true,
+      products: [],
+      pagination: { page: 2, limit: 5, totalItems: 0, totalPages: 1 }
+    });
+  });
 });

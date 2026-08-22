@@ -10,4 +10,4 @@ Disallow: /en/search
 Disallow: /*?sort=
 Disallow: /*?filter=
 
-Sitemap: {{WEBSITE_ORIGIN}}/sitemap.xml
+Sitemap: https://kapomatic.com/sitemap.xml

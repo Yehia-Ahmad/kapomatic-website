@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, PLATFORM_ID, TransferState, inject, makeStateKey } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import { Observable, catchError, forkJoin, map, of, switchMap } from 'rxjs';
+import { Observable, catchError, forkJoin, map, of, shareReplay, switchMap, timeout } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { BackendSeo } from './seo.service';
 import { LanguageCode, UrlService } from './url.service';
@@ -128,6 +128,8 @@ export class EcommerceService {
   private readonly urls = inject(UrlService);
   private readonly apiBaseUrl = environment.api_base_url;
   private readonly isBrowser = isPlatformBrowser(this.platformId);
+  private activeCategories$?: Observable<EcommerceCategory[]>;
+  private homePageCategories$?: Observable<HomePageCategory[]>;
 
   getPublicCategoryBySlug(language: LanguageCode, slug: string): Observable<PublicCategoryResponse> {
     if (!this.urls.apiConfigured()) {
@@ -229,27 +231,37 @@ export class EcommerceService {
 
   getActiveCategoriesWithProductsAndSettings(): Observable<EcommerceCategory[]> {
     if (!this.urls.apiConfigured()) return of([]);
-    return this.http
-      .get<unknown>(this.apiUrl('ecommerce-settings/categories/active'))
-      .pipe(map((response) => this.readArray(response).map((category) => this.mapCategory(category))));
+    this.activeCategories$ ??= this.withTransferState(
+      makeStateKey<EcommerceCategory[]>('active-categories-with-products'),
+      this.serverTimeout(
+        this.http
+        .get<unknown>(this.apiUrl('ecommerce-settings/categories/active'))
+          .pipe(map((response) => this.readArray(response).map((category) => this.mapCategory(category))))
+      )
+    ).pipe(shareReplay({ bufferSize: 1, refCount: false }));
+    return this.activeCategories$;
   }
 
   getHomePageCategories(): Observable<HomePageCategory[]> {
     if (!this.urls.apiConfigured()) return of([]);
-    return this.http.get<unknown>(this.apiUrl('ecommerce-settings/home-page/categories')).pipe(
-      map((response) => this.mapOrderedHomeCategories(response)),
-      switchMap((categories) => {
-        if (categories.length === 0) return of([]);
-        return forkJoin(
-          categories.map((category) =>
-            this.getProductsByActiveCategory(category.id).pipe(
-              map((products) => ({ ...category, products: this.uniqueProducts(products).slice(0, 10) })),
-              catchError(() => of({ ...category, products: category.products.slice(0, 10) }))
+    this.homePageCategories$ ??= this.withTransferState(
+      makeStateKey<HomePageCategory[]>('home-page-categories'),
+      this.http.get<unknown>(this.apiUrl('ecommerce-settings/home-page/categories')).pipe(
+        map((response) => this.mapOrderedHomeCategories(response)),
+        switchMap((categories) => {
+          if (categories.length === 0) return of([]);
+          return forkJoin(
+            categories.map((category) =>
+              this.getProductsByActiveCategory(category.id).pipe(
+                map((products) => ({ ...category, products: this.uniqueProducts(products).slice(0, 10) })),
+                catchError(() => of({ ...category, products: category.products.slice(0, 10) }))
+              )
             )
-          )
-        );
-      })
-    );
+          );
+        })
+      )
+    ).pipe(shareReplay({ bufferSize: 1, refCount: false }));
+    return this.homePageCategories$;
   }
 
   getProductsByActiveCategory(
@@ -747,6 +759,10 @@ export class EcommerceService {
         return value;
       })
     );
+  }
+
+  private serverTimeout<T>(request: Observable<T>, milliseconds = 3500): Observable<T> {
+    return this.isBrowser ? request : request.pipe(timeout({ first: milliseconds }));
   }
 
   private readString(object: Record<string, unknown>, paths: string[]): string {

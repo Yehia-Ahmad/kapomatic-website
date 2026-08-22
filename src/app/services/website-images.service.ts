@@ -1,7 +1,7 @@
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Injectable, PLATFORM_ID, inject } from '@angular/core';
-import { Observable, catchError, forkJoin, map, of, switchMap, tap } from 'rxjs';
+import { Injectable, PLATFORM_ID, TransferState, inject, makeStateKey } from '@angular/core';
+import { Observable, catchError, forkJoin, map, of, shareReplay, switchMap, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { EcommerceProduct, EcommerceService } from './ecommerce.service';
 import { UrlService } from './url.service';
@@ -25,24 +25,31 @@ export class WebsiteImagesService {
   private readonly http = inject(HttpClient);
   private readonly ecommerceService = inject(EcommerceService);
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly transferState = inject(TransferState);
   private readonly urls = inject(UrlService);
   private readonly apiBaseUrl = environment.api_base_url.replace(/\/+$/, '');
+  private readonly isBrowser = isPlatformBrowser(this.platformId);
   private readonly resolvedProductsCache = new Map<string, EcommerceProduct[]>();
   private readonly imagesCache = new Map<string, TargetedWebsiteImage>();
+  private activeImages$?: Observable<TargetedWebsiteImage[]>;
 
   getActiveWithProducts(): Observable<TargetedWebsiteImage[]> {
     if (!this.urls.apiConfigured()) return of([]);
-    return this.http.get<unknown>(`${this.apiBaseUrl}/website-images/active-with-products`).pipe(
-      map((response) => this.readArray(response).map((item) => this.mapWebsiteImage(item))),
-      tap((images) => {
-        for (const image of images) {
-          this.imagesCache.set(image.id, image);
-          if (image.resolvedProducts.length > 0) {
-            this.resolvedProductsCache.set(image.id, this.uniqueProducts(image.resolvedProducts));
+    this.activeImages$ ??= this.withTransferState(
+      makeStateKey<TargetedWebsiteImage[]>('active-website-images-with-products'),
+      this.http.get<unknown>(`${this.apiBaseUrl}/website-images/active-with-products`).pipe(
+        map((response) => this.readArray(response).map((item) => this.mapWebsiteImage(item))),
+        tap((images) => {
+          for (const image of images) {
+            this.imagesCache.set(image.id, image);
+            if (image.resolvedProducts.length > 0) {
+              this.resolvedProductsCache.set(image.id, this.uniqueProducts(image.resolvedProducts));
+            }
           }
-        }
-      })
-    );
+        })
+      )
+    ).pipe(shareReplay({ bufferSize: 1, refCount: false }));
+    return this.activeImages$;
   }
 
   getProducts(imageId: string): Observable<EcommerceProduct[]> {
@@ -219,5 +226,19 @@ export class WebsiteImagesService {
     return value && typeof value === 'object' && !Array.isArray(value)
       ? (value as Record<string, unknown>)
       : {};
+  }
+
+  private withTransferState<T>(key: ReturnType<typeof makeStateKey<T>>, request: Observable<T>): Observable<T> {
+    if (this.transferState.hasKey(key)) {
+      const value = this.transferState.get(key, null as T | null);
+      this.transferState.remove(key);
+      return of(value as T);
+    }
+
+    return request.pipe(
+      tap((value) => {
+        if (!this.isBrowser) this.transferState.set(key, value);
+      })
+    );
   }
 }

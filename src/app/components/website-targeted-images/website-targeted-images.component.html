@@ -39,10 +39,14 @@
             [attr.tabindex]="activeIndex() === index ? 0 : -1"
           >
             <img
-              class="absolute inset-0 h-full w-full  transition duration-200 group-hover:scale-[1.02]"
-              height="150"
+              class="absolute inset-0 h-full w-full object-cover transition duration-200 group-hover:scale-[1.02]"
+              width="1280"
+              height="720"
               [src]="image.imageSrc"
               [alt]="image.title || 'عرض منتجات'"
+              [attr.fetchpriority]="index === 0 ? 'high' : null"
+              [attr.loading]="index === 0 ? 'eager' : 'lazy'"
+              [attr.decoding]="index === 0 ? 'sync' : 'async'"
             />
             <div class="absolute inset-0 bg-black/35"></div>
 

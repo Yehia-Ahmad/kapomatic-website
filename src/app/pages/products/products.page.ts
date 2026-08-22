@@ -249,7 +249,6 @@ export class ProductsPage {
     this.searchDebounce = setTimeout(() => {
       if (term) {
         this.router.navigate([this.urls.localizedSearch(this.language())], { queryParams: { q: term } });
-        this.loadSearchProducts(term);
         return;
       }
 
@@ -303,7 +302,10 @@ export class ProductsPage {
           this.loading.set(false);
           this.updateSeo();
 
-          if (this.isTargetedListing() || this.selectedCategorySlug()) {
+          // Search results are loaded independently. Do not start the default
+          // category request here, otherwise its response can overwrite them
+          // when the categories request finishes after the search request.
+          if (this.isTargetedListing() || this.isSearchListing() || this.selectedCategorySlug()) {
             return;
           } else if (categoryId) {
             this.loadCategoryFilters(categoryId);

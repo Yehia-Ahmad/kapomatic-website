@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "targets": {
+    "/": {
+      "targetKind": "new-ui",
+      "projectId": "cad6319c-8787-4813-8f8d-c968aa2d4ba6",
+      "activeDraftId": "3d6cca6e-3a4b-405d-b2c7-8371074061cc",
+      "designSystemPath": ".superdesign/design-system.md",
+      "referenceIds": [],
+      "contextFiles": [
+        ".superdesign/design-system.md",
+        "src/styles.scss",
+        "tailwind.config.js",
+        "src/app/app.routes.ts",
+        "PROJECT_REBUILD_SPECIFICATION.md:361:393",
+        "PROJECT_REBUILD_SPECIFICATION.md:620:704"
+      ],
+      "fingerprints": {
+        ".superdesign/design-system.md": "8276f434563e477fdb7a25675a7415af6ded263c8e84cf3acfb04e8ce7f8ebe7",
+        "src/styles.scss": "bacfc26350e43a123c6c103cdf6dca3be7dcacc698618557ac440ca8be195a7d",
+        "tailwind.config.js": "cdca3319031149f11ab53afe72e46f1428594d0772a69ab96168a456665a2991",
+        "src/app/app.routes.ts": "f6709fc294c9a51f7709e5e505dcfa1b73be2266a45e7cbc0558c68a23985abb",
+        "PROJECT_REBUILD_SPECIFICATION.md": "5e9c83424b07cd3c277cf35b9c719399cb292218384c9074b556598ab54fe104"
+      },
+      "components": [],
+      "drafts": {
+        "3d6cca6e-3a4b-405d-b2c7-8371074061cc": {
+          "title": "Kapomatic Home Page — Professional Automotive",
+          "visualDirection": "Bilingual professional automotive retail with dynamic sections, image-led promotion, Font Awesome, and intentional desktop/mobile states",
+          "currentVersion": 3
+        }
+      },
+      "updatedAt": "2026-08-22T21:34:51Z"
+    }
+  }
+}

@@ -1,0 +1,93 @@
+<main id="main-content" class="min-h-[60vh] bg-canvas" tabindex="-1">
+  @if (home.status() === 'loading' || home.status() === 'idle') {
+    <app-home-skeleton />
+  } @else if (home.status() === 'error' && home.sections().length === 0) {
+    <app-home-state-panel
+      [title]="locale.translate('home.errorTitle')"
+      [description]="
+        hasMalformedIssue()
+          ? locale.translate('home.malformedError')
+          : locale.translate('home.errorDescription')
+      "
+      [retryLabel]="locale.translate('home.retry')"
+      [error]="true"
+      (retry)="home.retry()"
+    />
+  } @else if (home.status() === 'empty') {
+    <app-home-state-panel
+      [title]="locale.translate('home.emptyTitle')"
+      [description]="locale.translate('home.emptyDescription')"
+    />
+  } @else {
+    <h1 class="sr-only">{{ locale.translate('home.title') }}</h1>
+    @if (home.status() === 'refreshing') {
+      <div
+        class="mx-auto flex max-w-content items-center gap-2 px-4 py-2 text-sm text-text-muted"
+        role="status"
+      >
+        <fa-icon class="animate-spin" [icon]="icons.refresh" aria-hidden="true" />
+        <span>{{ locale.translate('home.refreshing') }}</span>
+      </div>
+    }
+    @if (home.hasPartialError()) {
+      <div class="mx-auto max-w-content px-4 pt-4">
+        <div
+          class="flex items-start gap-3 rounded-lg border border-warning/40 bg-amber-50 p-4 text-sm text-text"
+          role="status"
+        >
+          <fa-icon class="mt-0.5 shrink-0 text-warning" [icon]="icons.warning" aria-hidden="true" />
+          <p class="flex-1">
+            {{
+              hasMalformedIssue()
+                ? locale.translate('home.malformedError')
+                : locale.translate('home.partialError')
+            }}
+          </p>
+          <button
+            type="button"
+            class="min-h-11 rounded-md px-3 font-extrabold text-brand-active hover:bg-brand-soft"
+            (click)="home.retry()"
+          >
+            {{ locale.translate('home.retry') }}
+          </button>
+        </div>
+      </div>
+    }
+    @if (settings.settings().freeShippingMinimumAmount > 0) {
+      <div class="border-b border-border bg-brand-soft px-4 py-2.5 text-center text-sm font-bold text-text">
+        <fa-icon class="me-2 text-brand-active" [icon]="icons.shipping" aria-hidden="true" />
+        <span>{{ freeShippingMessage() }}</span>
+      </div>
+    }
+    @for (section of home.sections(); track section.id) {
+      <app-home-section-renderer [section]="section" />
+    }
+    @if (hasLocations()) {
+      <section class="mx-auto max-w-content px-4 py-10">
+        <div
+          class="flex flex-col items-start justify-between gap-5 rounded-xl bg-text p-6 text-white shadow-md sm:flex-row sm:items-center sm:p-8"
+        >
+          <div class="flex items-start gap-4">
+            <div
+              class="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-brand text-brand-foreground"
+            >
+              <fa-icon [icon]="icons.location" aria-hidden="true" />
+            </div>
+            <div>
+              <h2 class="text-xl font-extrabold">{{ locale.translate('home.locationsTitle') }}</h2>
+              <p class="mt-1 text-sm leading-7 text-white/75">
+                {{ locale.translate('home.locationsDescription') }}
+              </p>
+            </div>
+          </div>
+          <a
+            class="inline-flex min-h-11 shrink-0 items-center rounded-lg bg-brand px-5 font-extrabold text-brand-foreground hover:bg-brand-hover"
+            [routerLink]="['/', locale.locale(), 'locations']"
+            >{{ locale.translate('home.locationsAction') }}</a
+          >
+        </div>
+      </section>
+    }
+  }
+  <p class="sr-only" aria-live="polite" aria-atomic="true">{{ cart.announcement() }}</p>
+</main>

@@ -1,0 +1,41 @@
+<div [attr.inert]="drawerOpen() ? '' : null" [attr.aria-hidden]="drawerOpen() ? 'true' : null">
+  <app-site-header
+    [config]="header.config()"
+    [navigation]="navigation()"
+    [logoUrl]="logoUrl()"
+    [mobileLogoUrl]="mobileLogoUrl()"
+    [whatsappHref]="whatsappHref()"
+    (menuRequested)="drawerOpen.set(true)"
+  />
+
+  <router-outlet />
+
+  <app-site-footer
+    [logoUrl]="logoUrl()"
+    [logoAlt]="header.config().logoAltText"
+    [navigation]="navigation()"
+    [socialLinks]="settings.settings().socialMediaLinks"
+    [contact]="header.config().contact"
+    [whatsappHref]="whatsappHref()"
+  />
+
+  @if (whatsappHref()) {
+    <a
+      class="fixed bottom-4 end-4 z-30 inline-flex h-14 w-14 items-center justify-center rounded-full bg-success text-xl text-white shadow-lg transition hover:-translate-y-1 hover:shadow-md"
+      [href]="whatsappHref()"
+      target="_blank"
+      rel="noopener noreferrer"
+      [attr.aria-label]="locale.translate('contact.whatsapp')"
+    >
+      <fa-icon [icon]="whatsappIcon" aria-hidden="true" />
+    </a>
+  }
+</div>
+
+@if (drawerOpen()) {
+  <app-mobile-nav-drawer
+    [navigation]="navigation()"
+    [whatsappHref]="whatsappHref()"
+    (closeRequested)="closeDrawer()"
+  />
+}

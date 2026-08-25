@@ -1,0 +1,138 @@
+<section
+  class="relative overflow-hidden bg-text"
+  [class.mx-auto]="!section.fullWidth"
+  [class.max-w-wide]="!section.fullWidth"
+  [class.rounded-xl]="!section.fullWidth"
+  [attr.aria-roledescription]="locale.translate('home.carousel')"
+  [attr.aria-label]="section.title || locale.translate('home.offers')"
+  tabindex="0"
+>
+  <div class="relative aspect-[16/10] w-full sm:aspect-[16/7] lg:aspect-[16/5]">
+    @for (slide of section.slides; track slide.id; let index = $index) {
+      <article
+        class="absolute inset-0 transition-opacity duration-500"
+        [class.opacity-100]="index === currentIndex()"
+        [class.opacity-0]="index !== currentIndex()"
+        [attr.aria-hidden]="index !== currentIndex()"
+        [attr.inert]="index !== currentIndex() ? '' : null"
+      >
+        <picture>
+          <source media="(max-width: 639px)" [srcset]="slide.mobileImageUrl" />
+          <img
+            class="absolute inset-0 h-full w-full"
+            [class.object-cover]="section.settings.imageFit === 'cover'"
+            [class.object-contain]="section.settings.imageFit === 'contain'"
+            [src]="slide.desktopImageUrl"
+            [alt]="slide.altText || slide.title"
+            width="1440"
+            height="450"
+            [attr.loading]="index === 0 ? 'eager' : 'lazy'"
+            decoding="async"
+          />
+        </picture>
+        @if (slide.title || slide.subtitle || slide.buttonLabel) {
+          <div
+            class="absolute inset-0 flex items-end bg-gradient-to-t from-black/70 via-black/10 to-transparent p-5 text-white sm:p-8 lg:p-12"
+          >
+            <div class="max-w-xl">
+              @if (slide.title) {
+                <h2 class="text-2xl font-extrabold leading-tight sm:text-4xl">{{ slide.title }}</h2>
+              }
+              @if (slide.subtitle) {
+                <p class="mt-2 line-clamp-3 text-sm leading-7 text-white/90 sm:text-base">
+                  {{ slide.subtitle }}
+                </p>
+              }
+              @if (slide.linkUrl && slide.buttonLabel) {
+                @if (slide.external) {
+                  <a
+                    class="mt-4 inline-flex min-h-11 items-center rounded-lg bg-brand px-5 font-extrabold text-brand-foreground"
+                    [href]="slide.linkUrl"
+                    [attr.target]="slide.openInNewTab ? '_blank' : null"
+                    [attr.rel]="slide.openInNewTab ? 'noopener noreferrer' : null"
+                    >{{ slide.buttonLabel }}</a
+                  >
+                } @else {
+                  <a
+                    class="mt-4 inline-flex min-h-11 items-center rounded-lg bg-brand px-5 font-extrabold text-brand-foreground"
+                    [routerLink]="localizedUrl(slide.linkUrl)"
+                    >{{ slide.buttonLabel }}</a
+                  >
+                }
+              }
+            </div>
+          </div>
+        }
+        @if (slide.linkUrl && !slide.buttonLabel) {
+          @if (slide.external) {
+            <a
+              class="absolute inset-0"
+              [href]="slide.linkUrl"
+              [attr.target]="slide.openInNewTab ? '_blank' : null"
+              [attr.rel]="slide.openInNewTab ? 'noopener noreferrer' : null"
+              ><span class="sr-only">{{ slide.title || slide.altText }}</span></a
+            >
+          } @else {
+            <a class="absolute inset-0" [routerLink]="localizedUrl(slide.linkUrl)"
+              ><span class="sr-only">{{ slide.title || slide.altText }}</span></a
+            >
+          }
+        }
+      </article>
+    }
+  </div>
+
+  @if (section.slides.length > 1) {
+    @if (section.settings.showNavigation) {
+      <button
+        type="button"
+        class="absolute start-3 top-1/2 z-10 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white hover:bg-black/75"
+        [attr.aria-label]="locale.translate('home.previousSlide')"
+        (click)="previous()"
+      >
+        <fa-icon [icon]="locale.direction() === 'rtl' ? icons.right : icons.left" aria-hidden="true" />
+      </button>
+      <button
+        type="button"
+        class="absolute end-3 top-1/2 z-10 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white hover:bg-black/75"
+        [attr.aria-label]="locale.translate('home.nextSlide')"
+        (click)="next()"
+      >
+        <fa-icon [icon]="locale.direction() === 'rtl' ? icons.left : icons.right" aria-hidden="true" />
+      </button>
+    }
+    <div
+      class="absolute bottom-3 start-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-black/45 px-3 py-2 rtl:translate-x-1/2"
+    >
+      @if (section.settings.showPagination) {
+        @for (slide of section.slides; track slide.id; let index = $index) {
+          <button
+            type="button"
+            class="h-3 w-3 rounded-full border border-white"
+            [class.bg-white]="index === currentIndex()"
+            [attr.aria-label]="locale.interpolate('home.goToSlide', { count: index + 1 })"
+            [attr.aria-current]="index === currentIndex() ? 'true' : null"
+            (click)="goTo(index)"
+          ></button>
+        }
+      }
+      @if (section.settings.autoplay) {
+        <button
+          type="button"
+          class="inline-flex h-8 w-8 items-center justify-center rounded-full text-white hover:bg-white/15"
+          [attr.aria-label]="
+            paused() ? locale.translate('home.playCarousel') : locale.translate('home.pauseCarousel')
+          "
+          (click)="togglePaused()"
+        >
+          <fa-icon [icon]="paused() ? icons.play : icons.pause" aria-hidden="true" />
+        </button>
+      }
+    </div>
+    <p class="sr-only" aria-live="polite">
+      {{
+        locale.interpolate('home.slideStatus', { current: currentIndex() + 1, total: section.slides.length })
+      }}
+    </p>
+  }
+</section>

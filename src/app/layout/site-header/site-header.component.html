@@ -1,0 +1,216 @@
+@if (config.topBar.visible) {
+  <div
+    class="px-4 py-2 text-center text-xs font-semibold sm:text-sm"
+    [style.background-color]="config.topBar.backgroundColor"
+    [style.color]="config.topBar.textColor"
+  >
+    <span>{{ config.topBar.text }}</span>
+    @if (config.topBar.linkUrl && config.topBar.linkText) {
+      @if (config.topBar.external) {
+        <a
+          class="ms-2 underline underline-offset-4"
+          [href]="config.topBar.linkUrl"
+          [attr.target]="config.topBar.openInNewTab ? '_blank' : null"
+          [attr.rel]="config.topBar.openInNewTab ? 'noopener noreferrer' : null"
+          >{{ config.topBar.linkText }}</a
+        >
+      } @else {
+        <a class="ms-2 underline underline-offset-4" [routerLink]="config.topBar.linkUrl">{{
+          config.topBar.linkText
+        }}</a>
+      }
+    }
+  </div>
+}
+
+<header
+  class="z-40 border-b border-border bg-surface/95 backdrop-blur"
+  [class.sticky]="config.sticky"
+  [class.top-0]="config.sticky"
+>
+  <div class="mx-auto max-w-content px-3 py-3 sm:px-4 lg:py-4">
+    <div
+      class="grid grid-cols-[44px_minmax(72px,1fr)_44px_44px] items-center gap-1.5 lg:grid-cols-[190px_minmax(280px,1fr)_auto] lg:gap-6"
+    >
+      <button
+        #menuButton
+        type="button"
+        class="inline-flex h-11 w-11 items-center justify-center rounded-md border border-border bg-surface text-text transition hover:bg-surface-muted lg:hidden"
+        [attr.aria-label]="locale.translate('nav.open')"
+        aria-haspopup="dialog"
+        (click)="menuRequested.emit()"
+      >
+        <fa-icon [icon]="icons.bars" aria-hidden="true" />
+      </button>
+
+      <a
+        class="flex h-11 min-w-0 items-center justify-center rounded-md lg:h-14 lg:justify-start"
+        [routerLink]="['/', locale.locale()]"
+        [attr.aria-label]="locale.translate('nav.home')"
+      >
+        @if (logoUrl) {
+          <picture class="flex h-full w-full items-center justify-center lg:justify-start">
+            @if (mobileLogoUrl) {
+              <source media="(max-width: 1023px)" [srcset]="mobileLogoUrl" />
+            }
+            <img
+              class="h-full w-full max-w-[112px] object-contain object-center lg:max-w-[180px] lg:object-left rtl:lg:object-right"
+              [src]="logoUrl"
+              [alt]="config.logoAltText || locale.translate('app.brandName')"
+              width="180"
+              height="56"
+              fetchpriority="high"
+            />
+          </picture>
+        } @else {
+          <span
+            class="block h-9 w-full max-w-[96px] rounded-md bg-surface-muted lg:h-12 lg:max-w-[168px]"
+            aria-hidden="true"
+          ></span>
+        }
+      </a>
+
+      <form
+        class="order-last col-span-4 mt-2 lg:order-none lg:col-span-1 lg:mt-0"
+        role="search"
+        (submit)="$event.preventDefault(); submitSearch()"
+      >
+        <label class="sr-only" for="site-search">{{ locale.translate('header.searchLabel') }}</label>
+        <div class="relative">
+          <input
+            id="site-search"
+            class="h-11 w-full rounded-lg border border-border bg-canvas px-4 pe-12 text-sm text-text placeholder:text-text-muted focus:border-brand focus:bg-surface"
+            type="search"
+            name="q"
+            autocomplete="off"
+            enterkeyhint="search"
+            [placeholder]="locale.translate('header.searchPlaceholder')"
+            [(ngModel)]="searchQuery"
+          />
+          <button
+            type="submit"
+            class="absolute bottom-0 end-0 top-0 inline-flex w-11 items-center justify-center rounded-e-lg text-text transition hover:bg-brand hover:text-brand-foreground"
+            [attr.aria-label]="locale.translate('header.searchSubmit')"
+          >
+            <fa-icon [icon]="icons.search" aria-hidden="true" />
+          </button>
+        </div>
+      </form>
+
+      <button
+        type="button"
+        class="inline-flex h-11 w-11 items-center justify-center rounded-md text-text transition hover:bg-surface-muted lg:hidden"
+        [attr.aria-label]="locale.translate('header.languageLabel')"
+        (click)="switchLocale()"
+      >
+        <fa-icon [icon]="icons.globe" aria-hidden="true" />
+      </button>
+
+      <div class="flex items-center justify-end gap-1 sm:gap-2">
+        @if (whatsappHref) {
+          <a
+            class="hidden h-11 w-11 items-center justify-center rounded-md text-success transition hover:bg-surface-muted sm:inline-flex"
+            [href]="whatsappHref"
+            target="_blank"
+            rel="noopener noreferrer"
+            [attr.aria-label]="locale.translate('contact.whatsapp')"
+          >
+            <fa-icon [icon]="icons.whatsapp" aria-hidden="true" />
+          </a>
+        }
+        @if (config.showLanguageSwitcher) {
+          <button
+            type="button"
+            class="hidden h-11 items-center gap-2 rounded-md px-3 text-sm font-bold text-text transition hover:bg-surface-muted lg:inline-flex"
+            [attr.aria-label]="locale.translate('header.languageLabel')"
+            (click)="switchLocale()"
+          >
+            <fa-icon [icon]="icons.globe" aria-hidden="true" />
+            <span>{{ locale.translate('header.language') }}</span>
+          </button>
+        }
+        @if (config.showCart) {
+          <a
+            class="relative inline-flex h-11 w-11 items-center justify-center rounded-md text-text transition hover:bg-surface-muted"
+            [routerLink]="['/', locale.locale(), 'cart']"
+            [attr.aria-label]="cartLabel()"
+          >
+            <fa-icon [icon]="icons.cart" aria-hidden="true" />
+            @if (cart.count() > 0) {
+              <span
+                class="absolute -end-0.5 -top-0.5 grid min-h-5 min-w-5 place-items-center rounded-full bg-brand px-1 text-[11px] font-extrabold leading-none text-brand-foreground"
+                aria-hidden="true"
+                >{{ cart.count() }}</span
+              >
+            }
+          </a>
+        }
+      </div>
+    </div>
+
+    <nav
+      class="mt-3 hidden border-t border-border pt-3 lg:block"
+      [attr.aria-label]="locale.translate('nav.primary')"
+    >
+      <ul class="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm font-bold">
+        @for (item of navigation; track item.id) {
+          <li>
+            @if (item.children.length > 0) {
+              <details class="group relative">
+                <summary
+                  class="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-md px-2 text-text transition hover:bg-surface-muted hover:text-brand-active"
+                >
+                  <span>{{ item.label }}</span>
+                  <fa-icon
+                    class="text-xs transition group-open:rotate-180"
+                    [icon]="icons.chevron"
+                    aria-hidden="true"
+                  />
+                </summary>
+                <ul
+                  class="absolute start-0 top-full z-50 min-w-56 rounded-lg border border-border bg-surface p-2 shadow-md"
+                >
+                  @for (child of item.children; track child.id) {
+                    <li>
+                      @if (child.external) {
+                        <a
+                          class="block rounded-md px-3 py-2.5 hover:bg-surface-muted"
+                          [href]="child.url"
+                          [attr.target]="child.openInNewTab ? '_blank' : null"
+                          [attr.rel]="child.openInNewTab ? 'noopener noreferrer' : null"
+                          >{{ child.label }}</a
+                        >
+                      } @else {
+                        <a
+                          class="block rounded-md px-3 py-2.5 hover:bg-surface-muted"
+                          [routerLink]="localizedUrl(child)"
+                          >{{ child.label }}</a
+                        >
+                      }
+                    </li>
+                  }
+                </ul>
+              </details>
+            } @else if (item.external) {
+              <a
+                class="inline-flex min-h-11 items-center rounded-md px-2 transition hover:bg-surface-muted hover:text-brand-active"
+                [href]="item.url"
+                [attr.target]="item.openInNewTab ? '_blank' : null"
+                [attr.rel]="item.openInNewTab ? 'noopener noreferrer' : null"
+                >{{ item.label }}</a
+              >
+            } @else {
+              <a
+                class="inline-flex min-h-11 items-center rounded-md px-2 transition hover:bg-surface-muted hover:text-brand-active"
+                [routerLink]="localizedUrl(item)"
+                routerLinkActive="text-brand-active"
+                [routerLinkActiveOptions]="{ exact: item.url === '/' }"
+                >{{ item.label }}</a
+              >
+            }
+          </li>
+        }
+      </ul>
+    </nav>
+  </div>
+</header>

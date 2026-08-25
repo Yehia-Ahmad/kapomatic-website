@@ -1,0 +1,166 @@
+@switch (section.type) {
+  @case ('offers_slider') {
+    <div class="px-0 py-4 sm:px-4 sm:py-6">
+      <app-home-offer-carousel [section]="section" />
+    </div>
+  }
+  @case ('marquee') {
+    <section
+      class="overflow-hidden border-y border-border px-4 py-3"
+      [style.background-color]="section.backgroundColor || null"
+      [style.color]="section.textColor || null"
+      [attr.aria-label]="section.title || locale.translate('home.offers')"
+    >
+      <div
+        class="mx-auto flex max-w-wide flex-wrap items-center justify-center gap-x-8 gap-y-2 text-sm font-bold"
+      >
+        @for (item of section.items; track item.id) {
+          @if (item.linkUrl && item.external) {
+            <a
+              class="min-h-11 content-center underline-offset-4 hover:underline"
+              [href]="item.linkUrl"
+              [attr.target]="item.openInNewTab ? '_blank' : null"
+              [attr.rel]="item.openInNewTab ? 'noopener noreferrer' : null"
+              >{{ item.text }}</a
+            >
+          } @else if (item.linkUrl) {
+            <a
+              class="min-h-11 content-center underline-offset-4 hover:underline"
+              [routerLink]="localizedUrl(item.linkUrl)"
+              >{{ item.text }}</a
+            >
+          } @else {
+            <span>{{ item.text }}</span>
+          }
+        }
+      </div>
+    </section>
+  }
+  @case ('features_bar') {
+    <section
+      class="mx-auto max-w-content px-4 py-6"
+      [style.background-color]="section.backgroundColor || null"
+    >
+      @if (sectionTitle(section)) {
+        <h2 class="text-xl font-extrabold sm:text-2xl">{{ sectionTitle(section) }}</h2>
+      }
+      @if (section.subtitle) {
+        <p class="mt-2 text-sm leading-7 text-text-muted">{{ section.subtitle }}</p>
+      }
+      <div class="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        @for (item of section.items; track item.id) {
+          <article class="flex min-h-28 items-center gap-4 rounded-lg border border-border bg-surface p-4">
+            <div
+              class="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-brand-soft text-brand-active"
+            >
+              @if (item.iconUrl) {
+                <img
+                  class="h-7 w-7 object-contain"
+                  [src]="item.iconUrl"
+                  alt=""
+                  width="28"
+                  height="28"
+                  loading="lazy"
+                />
+              } @else {
+                <fa-icon [icon]="icons.feature" aria-hidden="true" />
+              }
+            </div>
+            <div class="min-w-0">
+              <h3 class="font-extrabold">{{ item.text }}</h3>
+              @if (item.description) {
+                <p class="mt-1 text-xs leading-6 text-text-muted">{{ item.description }}</p>
+              }
+            </div>
+          </article>
+        }
+      </div>
+    </section>
+  }
+  @default {
+    <section
+      class="mx-auto max-w-content px-4 py-8 sm:py-10"
+      [style.background-color]="section.backgroundColor || null"
+    >
+      <div class="flex items-end justify-between gap-4">
+        <div>
+          <h2 class="text-xl font-extrabold text-text sm:text-2xl lg:text-3xl">
+            {{ sectionTitle(section) }}
+          </h2>
+          @if (section.subtitle) {
+            <p class="mt-2 max-w-2xl text-sm leading-7 text-text-muted">{{ section.subtitle }}</p>
+          }
+        </div>
+        @if (
+          (section.type === 'categories' || section.type === 'products' || section.type === 'bundles') &&
+          section.settings.viewAllUrl
+        ) {
+          <a
+            class="hidden min-h-11 shrink-0 items-center gap-2 rounded-md px-2 text-sm font-extrabold text-brand-active hover:bg-brand-soft sm:inline-flex"
+            [routerLink]="localizedUrl(section.settings.viewAllUrl)"
+          >
+            <span>{{ section.settings.viewAllLabel || locale.translate('home.viewAll') }}</span>
+            <fa-icon [icon]="locale.direction() === 'rtl' ? icons.left : icons.right" aria-hidden="true" />
+          </a>
+        }
+      </div>
+
+      @if (section.type === 'categories') {
+        <div
+          class="home-grid mt-5"
+          [style.--columns-mobile]="section.settings.columns.mobile"
+          [style.--columns-tablet]="section.settings.columns.tablet"
+          [style.--columns-desktop]="section.settings.columns.desktop"
+        >
+          @for (category of section.categories; track category.id) {
+            <app-home-category-card [category]="category" />
+          }
+        </div>
+      } @else if (section.type === 'products') {
+        <div
+          class="home-grid mt-5"
+          [style.--columns-mobile]="section.settings.columns.mobile"
+          [style.--columns-tablet]="section.settings.columns.tablet"
+          [style.--columns-desktop]="section.settings.columns.desktop"
+        >
+          @for (product of section.products; track product.id) {
+            <app-home-product-card [product]="product" />
+          }
+        </div>
+      } @else if (section.type === 'bundles') {
+        <div
+          class="home-grid mt-5"
+          [style.--columns-mobile]="section.settings.columns.mobile"
+          [style.--columns-tablet]="section.settings.columns.tablet"
+          [style.--columns-desktop]="section.settings.columns.desktop"
+        >
+          @for (bundle of section.bundles; track bundle.id) {
+            <article class="overflow-hidden rounded-lg border border-border bg-surface p-3 shadow-sm">
+              <div class="grid aspect-square place-items-center rounded-lg bg-canvas p-3">
+                @if (bundle.imageUrl) {
+                  <img
+                    class="h-full w-full object-contain"
+                    [src]="bundle.imageUrl"
+                    [alt]="bundle.imageAlt"
+                    width="280"
+                    height="280"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                } @else {
+                  <fa-icon
+                    class="text-4xl text-text-muted"
+                    [icon]="icons.box"
+                    [attr.aria-label]="locale.translate('home.noImage')"
+                  />
+                }
+              </div>
+              <h3 class="mt-3 line-clamp-2 min-h-12 text-sm font-extrabold leading-6">{{ bundle.name }}</h3>
+              <bdi class="mt-2 block font-extrabold">{{ bundlePrice(bundle) }}</bdi>
+            </article>
+          }
+        </div>
+      }
+    </section>
+  }
+}

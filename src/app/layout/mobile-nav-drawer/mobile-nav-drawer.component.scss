@@ -1,0 +1,23 @@
+.mobile-drawer {
+  animation: drawer-enter 180ms ease-out;
+}
+
+@keyframes drawer-enter {
+  from {
+    transform: translateX(var(--drawer-offset, 100%));
+  }
+}
+
+:host-context([dir='rtl']) .mobile-drawer {
+  --drawer-offset: -100%;
+}
+
+:host-context([dir='ltr']) .mobile-drawer {
+  --drawer-offset: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-drawer {
+    animation: none;
+  }
+}

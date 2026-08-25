@@ -1,0 +1,9 @@
+:host {
+  display: block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  article {
+    transition: none;
+  }
+}

@@ -1,0 +1,129 @@
+<footer class="border-t border-border bg-surface">
+  <div class="mx-auto grid max-w-content gap-8 px-4 py-10 sm:grid-cols-2 lg:grid-cols-[1.25fr_1fr_1fr]">
+    <section aria-labelledby="footer-brand-title">
+      <h2 id="footer-brand-title" class="sr-only">{{ locale.translate('app.brandName') }}</h2>
+      <a
+        class="flex h-14 w-44 items-center rounded-md"
+        [routerLink]="['/', locale.locale()]"
+        [attr.aria-label]="locale.translate('nav.home')"
+      >
+        @if (logoUrl) {
+          <img
+            class="h-full w-full object-contain object-left rtl:object-right"
+            [src]="logoUrl"
+            [alt]="logoAlt || locale.translate('app.brandName')"
+            width="176"
+            height="56"
+            loading="lazy"
+          />
+        } @else {
+          <span class="block h-12 w-full rounded-md bg-surface-muted" aria-hidden="true"></span>
+        }
+      </a>
+      <p class="mt-4 max-w-sm text-sm leading-7 text-text-muted">
+        {{ locale.translate('app.businessDescription') }}
+      </p>
+      @if (socialLinks.length > 0) {
+        <div class="mt-5 flex flex-wrap gap-2">
+          @for (social of socialLinks; track social.id) {
+            <a
+              class="inline-flex h-11 w-11 items-center justify-center rounded-full border border-border text-text-muted transition hover:-translate-y-0.5 hover:border-brand hover:text-text"
+              [href]="social.link"
+              target="_blank"
+              rel="noopener noreferrer"
+              [attr.aria-label]="social.name"
+            >
+              <fa-icon [icon]="socialIcon(social.name)" aria-hidden="true" />
+            </a>
+          }
+        </div>
+      }
+    </section>
+
+    <nav [attr.aria-label]="locale.translate('nav.footer')">
+      <h2 class="text-sm font-extrabold uppercase tracking-wide text-text">
+        {{ locale.translate('footer.categories') }}
+      </h2>
+      <ul class="mt-4 space-y-2 text-sm text-text-muted">
+        @for (item of navigation; track item.id) {
+          <li>
+            @if (item.external) {
+              <a
+                class="inline-flex min-h-11 items-center hover:text-text"
+                [href]="item.url"
+                [attr.target]="item.openInNewTab ? '_blank' : null"
+                [attr.rel]="item.openInNewTab ? 'noopener noreferrer' : null"
+                >{{ item.label }}</a
+              >
+            } @else {
+              <a
+                class="inline-flex min-h-11 items-center hover:text-text"
+                [routerLink]="localizedUrl(item)"
+                >{{ item.label }}</a
+              >
+            }
+          </li>
+        }
+      </ul>
+    </nav>
+
+    <section aria-labelledby="footer-contact-title">
+      <h2 id="footer-contact-title" class="text-sm font-extrabold uppercase tracking-wide text-text">
+        {{ locale.translate('footer.contact') }}
+      </h2>
+      <div class="mt-4 space-y-2 text-sm text-text-muted">
+        @if (contact.showPhone && contact.phoneNumber) {
+          <a
+            class="flex min-h-11 items-center gap-3 hover:text-text"
+            [href]="'tel:' + contact.phoneNumber"
+            dir="ltr"
+          >
+            <fa-icon [icon]="icons.phone" aria-hidden="true" />
+            <bdi>{{ contact.phoneNumber }}</bdi>
+          </a>
+        }
+        @if (contact.showEmail && contact.email) {
+          <a
+            class="flex min-h-11 items-center gap-3 hover:text-text"
+            [href]="'mailto:' + contact.email"
+            dir="ltr"
+          >
+            <fa-icon [icon]="icons.envelope" aria-hidden="true" />
+            <bdi>{{ contact.email }}</bdi>
+          </a>
+        }
+        @if (whatsappHref) {
+          <a
+            class="flex min-h-11 items-center gap-3 hover:text-text"
+            [href]="whatsappHref"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <fa-icon class="text-success" [icon]="icons.whatsapp" aria-hidden="true" />
+            <span>{{ locale.translate('contact.whatsapp') }}</span>
+          </a>
+        }
+        <a
+          class="flex min-h-11 items-center gap-3 hover:text-text"
+          [routerLink]="['/', locale.locale(), 'locations']"
+        >
+          <fa-icon [icon]="icons.location" aria-hidden="true" />
+          <span>{{ locale.translate('footer.locations') }}</span>
+        </a>
+        <button
+          type="button"
+          class="flex min-h-11 items-center gap-3 rounded-md hover:text-text"
+          [attr.aria-label]="locale.translate('header.languageLabel')"
+          (click)="switchLocale()"
+        >
+          <fa-icon [icon]="icons.globe" aria-hidden="true" />
+          <span>{{ locale.translate('footer.language') }}</span>
+        </button>
+      </div>
+    </section>
+  </div>
+  <div class="border-t border-border px-4 py-4 text-center text-xs text-text-muted">
+    <span dir="ltr">© {{ year }} Kapomatic.</span>
+    <span class="ms-1">{{ locale.translate('footer.rights') }}</span>
+  </div>
+</footer>

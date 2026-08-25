@@ -1,0 +1,8 @@
+node_modules
+dist
+.angular
+coverage
+.superdesign/tmp
+package-lock.json
+PROJECT_REBUILD_SPECIFICATION.md
+PROJECT_OVERVIEW.md

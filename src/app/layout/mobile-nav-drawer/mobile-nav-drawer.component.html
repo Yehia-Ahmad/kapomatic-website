@@ -1,0 +1,102 @@
+<div class="fixed inset-0 z-[100]">
+  <button
+    type="button"
+    class="absolute inset-0 cursor-default bg-black/50"
+    [attr.aria-label]="locale.translate('nav.close')"
+    (click)="closeRequested.emit()"
+  ></button>
+  <aside
+    #dialogPanel
+    class="mobile-drawer absolute bottom-0 end-0 top-0 flex w-[min(88vw,22rem)] flex-col bg-surface shadow-lg"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="mobile-navigation-title"
+  >
+    <div class="flex min-h-16 items-center justify-between border-b border-border px-4">
+      <h2 id="mobile-navigation-title" class="text-lg font-extrabold">
+        {{ locale.translate('nav.mobile') }}
+      </h2>
+      <button
+        #closeButton
+        type="button"
+        class="inline-flex h-11 w-11 items-center justify-center rounded-md text-text hover:bg-surface-muted"
+        [attr.aria-label]="locale.translate('nav.close')"
+        (click)="closeRequested.emit()"
+      >
+        <fa-icon [icon]="icons.close" aria-hidden="true" />
+      </button>
+    </div>
+    <nav class="min-h-0 flex-1 overflow-y-auto p-4" [attr.aria-label]="locale.translate('nav.mobile')">
+      <ul class="space-y-1">
+        @for (item of navigation; track item.id) {
+          <li>
+            @if (item.external) {
+              <a
+                class="flex min-h-11 items-center rounded-md px-3 font-bold hover:bg-surface-muted"
+                [href]="item.url"
+                [attr.target]="item.openInNewTab ? '_blank' : null"
+                [attr.rel]="item.openInNewTab ? 'noopener noreferrer' : null"
+                (click)="closeRequested.emit()"
+                >{{ item.label }}</a
+              >
+            } @else {
+              <a
+                class="flex min-h-11 items-center rounded-md px-3 font-bold hover:bg-surface-muted"
+                [routerLink]="localizedUrl(item)"
+                (click)="closeRequested.emit()"
+                >{{ item.label }}</a
+              >
+            }
+            @if (item.children.length > 0) {
+              <ul class="ms-4 border-s border-border ps-2">
+                @for (child of item.children; track child.id) {
+                  <li>
+                    @if (child.external) {
+                      <a
+                        class="flex min-h-11 items-center rounded-md px-3 text-sm hover:bg-surface-muted"
+                        [href]="child.url"
+                        [attr.target]="child.openInNewTab ? '_blank' : null"
+                        [attr.rel]="child.openInNewTab ? 'noopener noreferrer' : null"
+                        (click)="closeRequested.emit()"
+                        >{{ child.label }}</a
+                      >
+                    } @else {
+                      <a
+                        class="flex min-h-11 items-center rounded-md px-3 text-sm hover:bg-surface-muted"
+                        [routerLink]="localizedUrl(child)"
+                        (click)="closeRequested.emit()"
+                        >{{ child.label }}</a
+                      >
+                    }
+                  </li>
+                }
+              </ul>
+            }
+          </li>
+        }
+      </ul>
+    </nav>
+    <div class="space-y-2 border-t border-border p-4">
+      @if (whatsappHref) {
+        <a
+          class="flex min-h-11 items-center gap-3 rounded-md px-3 font-bold text-success hover:bg-surface-muted"
+          [href]="whatsappHref"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <fa-icon [icon]="icons.whatsapp" aria-hidden="true" />
+          <span>{{ locale.translate('contact.whatsapp') }}</span>
+        </a>
+      }
+      <button
+        type="button"
+        class="flex min-h-11 w-full items-center gap-3 rounded-md px-3 font-bold hover:bg-surface-muted"
+        [attr.aria-label]="locale.translate('header.languageLabel')"
+        (click)="switchLocale()"
+      >
+        <fa-icon [icon]="icons.globe" aria-hidden="true" />
+        <span>{{ locale.translate('header.language') }}</span>
+      </button>
+    </div>
+  </aside>
+</div>

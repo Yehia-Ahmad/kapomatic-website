@@ -3,7 +3,8 @@ import {
   filterTitleFromQueryKey,
   normalizeCategoryProductsResponse,
   normalizeFilterGroups,
-  normalizeProductResponse
+  normalizeProductResponse,
+  normalizeSearchProductsResponse
 } from './catalog.normalizer';
 import { CatalogContractError } from './catalog.models';
 
@@ -81,5 +82,61 @@ describe('catalog normalizers', () => {
         'en'
       )
     ).toThrowError(CatalogContractError);
+  });
+
+  it('normalizes the confirmed Search contract and selects the requested translation', () => {
+    const result = normalizeSearchProductsResponse(
+      {
+        success: true,
+        products: [
+          {
+            id: 'product-1',
+            name: 'فلتر',
+            slug: 'filter-ar',
+            imageAlt: 'صورة فلتر',
+            translations: {
+              en: {
+                name: 'Transmission filter',
+                slug: 'transmission-filter',
+                shortDescription: 'Replacement filter',
+                imageAlt: 'Transmission filter image'
+              }
+            },
+            imageUrl: 'https://images.example/filter.webp',
+            retailPrice: 200,
+            finalVisiblePrice: 200,
+            currency: 'EGP'
+          }
+        ],
+        pagination: {
+          page: 1,
+          limit: 12,
+          totalItems: 1,
+          totalPages: 1,
+          hasNextPage: false,
+          hasPrevPage: false
+        }
+      },
+      'en'
+    );
+
+    expect(result.products[0]).toEqual(
+      jasmine.objectContaining({
+        name: 'Transmission filter',
+        slug: 'transmission-filter',
+        shortDescription: 'Replacement filter'
+      })
+    );
+    expect(result.products[0]?.images[0]?.alt).toBe('Transmission filter image');
+    expect(result.pagination).toEqual(jasmine.objectContaining({ totalItems: 1, hasPreviousPage: false }));
+  });
+
+  it('rejects a Search response without the confirmed products array', () => {
+    expect(() =>
+      normalizeSearchProductsResponse(
+        { success: true, pagination: { page: 1, limit: 12, totalItems: 0, totalPages: 0 } },
+        'ar'
+      )
+    ).toThrowError(CatalogContractError, 'SEARCH_PRODUCTS_NOT_ARRAY');
   });
 });

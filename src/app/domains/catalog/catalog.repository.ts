@@ -9,14 +9,16 @@ import {
   normalizeCategoryProductsResponse,
   normalizeCategoryResponse,
   normalizeFilterGroups,
-  normalizeProductResponse
+  normalizeProductResponse,
+  normalizeSearchProductsResponse
 } from './catalog.normalizer';
 import {
   CatalogCategory,
   CatalogFilterGroup,
   CatalogProduct,
   CategoryProductsResult,
-  CategoryQueryState
+  CategoryQueryState,
+  SearchProductsResult
 } from './catalog.models';
 
 interface SlugAliasResult {
@@ -95,6 +97,39 @@ export class CatalogRepository {
     );
     this.filterRequests.set(categoryId, request);
     return request;
+  }
+
+  searchProducts(
+    locale: SupportedLocale,
+    query: string,
+    page = 1,
+    limit = 12
+  ): Observable<SearchProductsResult> {
+    const normalizedQuery = query.trim().replace(/\s+/g, ' ');
+    if (!normalizedQuery) {
+      return of({
+        products: [],
+        pagination: {
+          page: 1,
+          limit,
+          totalItems: 0,
+          totalPages: 0,
+          hasNextPage: false,
+          hasPreviousPage: false
+        }
+      });
+    }
+    const params = new HttpParams().set('q', normalizedQuery).set('page', page).set('limit', limit);
+    const requestKey = `${locale}:${normalizedQuery}:${page}:${limit}`;
+    const stateKey = makeStateKey<SearchProductsResult>(`kapomatic-search-products-v1-${requestKey}`);
+    const transferred = this.fromTransferState(stateKey);
+    if (transferred) return of(transferred);
+    return this.http.get<unknown>(this.urls.api(API_ENDPOINTS.publicSearch), { params }).pipe(
+      map((response) =>
+        normalizeSearchProductsResponse(response, locale, (source) => this.urls.image(source))
+      ),
+      tap((result) => this.toTransferState(stateKey, result))
+    );
   }
 
   loadProduct(

@@ -14,6 +14,7 @@ const storefrontShell = () =>
 const homePage = () => import('./features/home/home.page').then((module) => module.HomePageComponent);
 const categoryPage = () =>
   import('./features/category/category.page').then((module) => module.CategoryPageComponent);
+const searchPage = () => import('./features/search/search.page').then((module) => module.SearchPageComponent);
 const productDetailsPage = () =>
   import('./features/product-details/product-details.page').then(
     (module) => module.ProductDetailsPageComponent
@@ -50,7 +51,7 @@ export const routes: Routes = [
             loadComponent: categoryPage,
             data: { pageKey: 'page.category' }
           },
-          { path: 'search', loadComponent: foundationPage, data: { pageKey: 'page.search' } },
+          { path: 'search', loadComponent: searchPage, data: { pageKey: 'page.search' } },
           {
             path: 'products/:productSlug',
             loadComponent: productDetailsPage,

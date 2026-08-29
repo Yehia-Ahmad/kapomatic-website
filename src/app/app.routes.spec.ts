@@ -5,6 +5,7 @@ import { CategoryPageComponent } from './features/category/category.page';
 import { HomePageComponent } from './features/home/home.page';
 import { ProductDetailsPageComponent } from './features/product-details/product-details.page';
 import { BranchLocationsPageComponent } from './features/branches/branch-locations.page';
+import { SearchPageComponent } from './features/search/search.page';
 
 describe('application routes', () => {
   it('redirects the root to Arabic and keeps legacy redirects before the locale matcher', () => {
@@ -14,11 +15,12 @@ describe('application routes', () => {
     expect(routes.findIndex((route) => route.path === 'products/:legacyId')).toBeLessThan(matcherIndex);
   });
 
-  it('loads real Home, Category, Product, Cart and Branch components under the localized shell', async () => {
+  it('loads real Home, Category, Search, Product, Cart and Branch components under the localized shell', async () => {
     const localized = routes.find((route) => route.matcher === localeMatcher);
     const shell = localized?.children?.[0];
     const home = shell?.children?.find((route) => route.path === '' && route.pathMatch === 'full');
     const category = shell?.children?.find((route) => route.path === 'categories/:categorySlug');
+    const search = shell?.children?.find((route) => route.path === 'search');
     const product = shell?.children?.find((route) => route.path === 'products/:productSlug');
     const cart = shell?.children?.find((route) => route.path === 'cart');
     const branches = shell?.children?.find((route) => route.path === 'branches');
@@ -26,6 +28,7 @@ describe('application routes', () => {
 
     expect(await home?.loadComponent?.()).toBe(HomePageComponent);
     expect(await category?.loadComponent?.()).toBe(CategoryPageComponent);
+    expect(await search?.loadComponent?.()).toBe(SearchPageComponent);
     expect(await product?.loadComponent?.()).toBe(ProductDetailsPageComponent);
     expect(await cart?.loadComponent?.()).toBe(CartPageComponent);
     expect(await branches?.loadComponent?.()).toBe(BranchLocationsPageComponent);

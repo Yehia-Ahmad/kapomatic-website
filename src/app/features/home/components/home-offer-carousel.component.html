@@ -19,9 +19,7 @@
         <picture>
           <source media="(max-width: 639px)" [srcset]="slide.mobileImageUrl" />
           <img
-            class="absolute inset-0 h-full w-full"
-            [class.object-cover]="section.settings.imageFit === 'cover'"
-            [class.object-contain]="section.settings.imageFit === 'contain'"
+            class="absolute inset-0 h-full w-full object-fill"
             [src]="slide.desktopImageUrl"
             [alt]="slide.altText || slide.title"
             width="1440"

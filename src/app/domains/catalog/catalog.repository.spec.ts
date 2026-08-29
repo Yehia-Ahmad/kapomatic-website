@@ -73,4 +73,39 @@ describe('CatalogRepository', () => {
     expect(product.id).toBe('p1');
     expect(product.images[0]?.url).toBe('/api/public/images/products/p1');
   });
+
+  it('calls the public Search endpoint once with normalized query and pagination', async () => {
+    const result = firstValueFrom(repository.searchProducts('en', '  transmission   filter ', 2));
+    const request = http.expectOne(
+      (candidate) =>
+        candidate.url === '/api/public/products/search' &&
+        candidate.params.get('q') === 'transmission filter' &&
+        candidate.params.get('page') === '2' &&
+        candidate.params.get('limit') === '12'
+    );
+    request.flush({
+      success: true,
+      products: [
+        {
+          id: 'p1',
+          name: 'فلتر',
+          slug: 'filter-ar',
+          translations: { en: { name: 'Transmission filter', slug: 'transmission-filter' } },
+          price: 100,
+          currency: 'EGP'
+        }
+      ],
+      pagination: {
+        page: 2,
+        limit: 12,
+        totalItems: 13,
+        totalPages: 2,
+        hasNextPage: false,
+        hasPrevPage: true
+      }
+    });
+
+    expect((await result).products[0]?.name).toBe('Transmission filter');
+    expect((await result).pagination).toEqual(jasmine.objectContaining({ page: 2, hasPreviousPage: true }));
+  });
 });

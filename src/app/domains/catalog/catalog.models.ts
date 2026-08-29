@@ -81,6 +81,11 @@ export interface CategoryProductsResult {
   readonly pagination: CatalogPagination;
 }
 
+export interface SearchProductsResult {
+  readonly products: readonly CatalogProduct[];
+  readonly pagination: CatalogPagination;
+}
+
 export interface CatalogFilterValue {
   readonly id: string;
   readonly label: string;

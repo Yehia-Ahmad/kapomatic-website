@@ -11,7 +11,8 @@ import {
   CatalogProductImage,
   CatalogSeo,
   CatalogSpecification,
-  CategoryProductsResult
+  CategoryProductsResult,
+  SearchProductsResult
 } from './catalog.models';
 
 export function normalizeCategoryResponse(
@@ -48,6 +49,22 @@ export function normalizeProductResponse(
 ): CatalogProduct {
   const root = asRecord(source);
   return normalizeProductData(root['data'], root['seo'], locale, normalizeImage);
+}
+
+export function normalizeSearchProductsResponse(
+  source: unknown,
+  locale: SupportedLocale,
+  normalizeImage: ImageSourceNormalizer = safeImageSource
+): SearchProductsResult {
+  const root = asRecord(source);
+  if (!Array.isArray(root['products'])) throw new CatalogContractError('SEARCH_PRODUCTS_NOT_ARRAY');
+  const products = root['products'].map((item) =>
+    normalizeProductData(item, undefined, locale, normalizeImage)
+  );
+  return {
+    products,
+    pagination: normalizePagination(root['pagination'], products.length)
+  };
 }
 
 export function normalizeFilterGroups(source: unknown): readonly CatalogFilterGroup[] {
@@ -123,26 +140,31 @@ function normalizeProductData(
   normalizeImage: ImageSourceNormalizer
 ): CatalogProduct {
   const value = asRecord(source);
-  const id = readId(value);
-  const name = readString(value['name']);
-  const slug = readString(value['slug']);
-  if (!id || !name || !slug) throw new CatalogContractError('PRODUCT_REQUIRED_FIELDS_INVALID');
   const translations = asRecord(value['translations']);
   const activeTranslation = asRecord(translations[locale]);
+  const id = readId(value);
+  const name = readString(activeTranslation['name'] ?? value['name']);
+  const slug = readString(activeTranslation['slug'] ?? value['slug']);
+  if (!id || !name || !slug) throw new CatalogContractError('PRODUCT_REQUIRED_FIELDS_INVALID');
   const categoryValue = asRecord(value['category']);
   const categoryId = readId(categoryValue);
   const categoryName = readString(categoryValue['name']);
   const categorySlug = readString(categoryValue['slug']);
   const currency = readString(value['currency']).toUpperCase();
   const seo = normalizeSeo(seoSource, `/${locale}/products/${encodeURIComponent(slug)}`);
-  const images = normalizeImages(value, name, readString(value['imageAlt']) || name, normalizeImage);
+  const images = normalizeImages(
+    value,
+    name,
+    readString(activeTranslation['imageAlt'] ?? value['imageAlt']) || name,
+    normalizeImage
+  );
   const availableQuantity = finiteInteger(value['inventoryCount'] ?? value['availableQuantity']);
   return {
     id,
     locale,
     name,
     shortDescription: readString(activeTranslation['shortDescription'] ?? value['shortDescription']),
-    description: readString(value['description'] ?? activeTranslation['description']),
+    description: readString(activeTranslation['description'] ?? value['description']),
     brand: readString(value['brand'] ?? asRecord(value['manufacturer'])['name']),
     code: readString(value['code'] ?? value['sku']),
     slug,

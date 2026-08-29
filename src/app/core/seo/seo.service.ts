@@ -16,7 +16,7 @@ export class SeoService {
 
   apply(page: SeoPageDefinition): void {
     const canonicalUrl = this.urls.site(page.path);
-    const imageUrl = page.imageUrl ? this.urls.site(page.imageUrl) : '';
+    const imageUrl = page.imageUrl ? this.absoluteUrl(page.imageUrl) : '';
     const locale = page.locale === 'ar' ? 'ar_EG' : 'en_EG';
 
     this.title.setTitle(page.title);
@@ -70,6 +70,15 @@ export class SeoService {
     link.setAttribute(GENERATED_ATTRIBUTE, 'true');
     if (hreflang) link.hreflang = hreflang;
     this.document.head.appendChild(link);
+  }
+
+  private absoluteUrl(value: string): string {
+    try {
+      const url = new URL(value);
+      return ['http:', 'https:'].includes(url.protocol) ? url.toString() : this.urls.site(value);
+    } catch {
+      return this.urls.site(value);
+    }
   }
 
   private replaceStructuredData(items: readonly Record<string, unknown>[]): void {

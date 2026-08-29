@@ -34,12 +34,21 @@ export class HomeProductCardComponent {
     if (!this.canAdd()) return;
     const effectivePrice = this.product.price?.sale ?? this.product.price?.regular;
     if (effectivePrice === undefined) return;
-    const added = this.cart.add(this.product.id, {
-      name: this.product.name,
-      imageUrl: this.product.imageUrl,
-      unitPrice: effectivePrice,
-      currency: this.settings.settings().currencyCode
-    });
+    const added = this.cart.add(
+      this.product.id,
+      {
+        name: this.product.name,
+        imageUrl: this.product.imageUrl,
+        unitPrice: effectivePrice,
+        currency: this.settings.settings().currencyCode,
+        slug: this.product.slug,
+        alternateSlugs: this.product.alternateSlugs
+      },
+      {
+        availability: this.product.availability,
+        maximumQuantity: this.product.availableQuantity
+      }
+    );
     this.cart.announce(
       added
         ? this.locale.interpolate('product.added', { name: this.product.name })

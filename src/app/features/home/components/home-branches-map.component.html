@@ -1,0 +1,190 @@
+<section
+  [class]="pageMode ? 'min-w-0' : 'mx-auto min-w-0 max-w-content px-4 py-10'"
+  [attr.aria-labelledby]="pageMode ? null : 'home-branches-title'"
+  [attr.aria-label]="pageMode ? locale.translate('branches.contentLabel') : null"
+>
+  @if (!pageMode) {
+    <div class="mb-6 flex items-start gap-4">
+      <div class="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-brand text-brand-foreground">
+        <fa-icon [icon]="icons.location" aria-hidden="true" />
+      </div>
+      <div>
+        <h2 id="home-branches-title" class="text-2xl font-extrabold">
+          {{ locale.translate('home.branchesTitle') }}
+        </h2>
+        <p class="mt-1 text-sm leading-7 text-text-muted">
+          {{ locale.translate('home.branchesDescription') }}
+        </p>
+      </div>
+    </div>
+  }
+
+  @if ((settings.status() === 'idle' || settings.status() === 'loading') && branches().length === 0) {
+    <div
+      class="grid min-h-80 place-items-center rounded-xl border border-border bg-surface p-6"
+      role="status"
+    >
+      <p class="text-sm font-bold text-text-muted">{{ locale.translate('home.branchesLoading') }}</p>
+    </div>
+  } @else if (settings.status() === 'error' && branches().length === 0) {
+    <div
+      class="grid min-h-64 place-items-center rounded-xl border border-danger/30 bg-surface p-6 text-center"
+      role="alert"
+    >
+      <div>
+        <h3 class="text-lg font-extrabold">{{ locale.translate('home.branchesErrorTitle') }}</h3>
+        <p class="mt-2 text-sm text-text-muted">{{ locale.translate('home.branchesError') }}</p>
+        <button
+          type="button"
+          class="mt-5 inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand px-5 font-extrabold text-brand-foreground hover:bg-brand-hover"
+          (click)="retry()"
+        >
+          <fa-icon [icon]="icons.retry" aria-hidden="true" />
+          {{ locale.translate('home.branchesRetry') }}
+        </button>
+      </div>
+    </div>
+  } @else if (branches().length === 0) {
+    <div class="grid min-h-64 place-items-center rounded-xl border border-border bg-surface p-6 text-center">
+      <div>
+        <h3 class="text-lg font-extrabold">{{ locale.translate('home.branchesEmptyTitle') }}</h3>
+        <p class="mt-2 text-sm text-text-muted">{{ locale.translate('home.branchesEmpty') }}</p>
+      </div>
+    </div>
+  } @else {
+    @if (settings.status() === 'loading') {
+      <p class="sr-only" role="status">{{ locale.translate('home.branchesLoading') }}</p>
+    } @else if (settings.status() === 'error') {
+      <div
+        class="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-danger/30 bg-surface p-4"
+        role="alert"
+      >
+        <p class="text-sm text-text-muted">{{ locale.translate('home.branchesError') }}</p>
+        <button
+          type="button"
+          class="min-h-11 rounded-lg px-4 font-extrabold text-brand-active hover:bg-brand-soft"
+          (click)="retry()"
+        >
+          {{ locale.translate('home.branchesRetry') }}
+        </button>
+      </div>
+    }
+    <div class="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(18rem,2fr)]">
+      <div
+        class="branch-map-card min-w-0 overflow-hidden rounded-xl border border-border bg-surface shadow-sm"
+      >
+        @if (validBranches().length > 0 && !mapLoadFailed()) {
+          <div class="branch-map-shell">
+            <div
+              #mapHost
+              class="branch-map"
+              role="region"
+              tabindex="-1"
+              [attr.aria-label]="locale.translate('branches.mapLabel')"
+            ></div>
+            @if (!mapReady()) {
+              <div class="absolute inset-0 grid place-items-center bg-surface p-6 text-center" role="status">
+                <p class="text-sm font-bold text-text-muted">
+                  {{ locale.translate('home.branchesMapPlaceholder') }}
+                </p>
+              </div>
+            }
+            @if (tileLoadFailed()) {
+              <div
+                class="absolute inset-x-3 bottom-3 z-[800] rounded-lg border border-warning/40 bg-surface/95 p-3 text-center text-sm font-bold text-text shadow-sm"
+                role="status"
+              >
+                {{ locale.translate('branches.tileError') }}
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="branch-map-shell grid place-items-center p-6 text-center">
+            <div>
+              <p class="text-sm font-bold text-text-muted">
+                {{
+                  mapLoadFailed()
+                    ? locale.translate('home.branchesMapError')
+                    : locale.translate('home.branchesNoCoordinates')
+                }}
+              </p>
+              @if (mapLoadFailed()) {
+                <button
+                  type="button"
+                  class="mt-4 min-h-11 rounded-lg px-4 font-extrabold text-brand-active hover:bg-brand-soft"
+                  (click)="retry()"
+                >
+                  {{ locale.translate('home.branchesRetry') }}
+                </button>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <ul class="min-w-0 space-y-3" [attr.aria-label]="locale.translate('home.branchesList')">
+        @for (branch of branches(); track branch.id) {
+          <li
+            class="min-w-0 rounded-xl border bg-surface p-5 shadow-sm transition"
+            [class.border-brand]="selectedBranchId() === branch.id"
+            [class.border-border]="selectedBranchId() !== branch.id"
+            [attr.aria-current]="selectedBranchId() === branch.id ? 'location' : null"
+          >
+            @if (hasValidBranchCoordinates(branch)) {
+              <button
+                type="button"
+                class="block min-h-11 w-full rounded-md text-start"
+                [attr.aria-label]="locale.interpolate('branches.selectBranch', { name: branch.name })"
+                (click)="selectBranch(branch)"
+              >
+                <span class="block break-words text-lg font-extrabold" dir="auto">{{ branch.name }}</span>
+                @if (branch.address) {
+                  <span class="mt-2 block break-words text-sm leading-7 text-text-muted" dir="auto">
+                    {{ branch.address }}
+                  </span>
+                }
+              </button>
+            } @else {
+              <span class="block break-words text-lg font-extrabold" dir="auto">{{ branch.name }}</span>
+              @if (branch.address) {
+                <span class="mt-2 block break-words text-sm leading-7 text-text-muted" dir="auto">
+                  {{ branch.address }}
+                </span>
+              }
+              <span class="mt-2 block text-xs font-bold text-warning">
+                {{ locale.translate('branches.invalidCoordinates') }}
+              </span>
+            }
+            @if (selectedBranchId() === branch.id) {
+              <span class="mt-2 block text-xs font-extrabold text-brand-active">
+                {{ locale.translate('branches.selected') }}
+              </span>
+            }
+            <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+              @if (branch.phone) {
+                <a
+                  class="inline-flex min-h-11 items-center gap-2 font-bold text-text hover:text-brand-active"
+                  [href]="phoneUrl(branch.phone)"
+                  dir="ltr"
+                >
+                  <fa-icon [icon]="icons.phone" aria-hidden="true" />
+                  {{ branch.phone }}
+                </a>
+              }
+              @if (directionsUrl(branch); as url) {
+                <a
+                  class="inline-flex min-h-11 items-center rounded-lg bg-brand px-4 font-extrabold text-brand-foreground hover:bg-brand-hover"
+                  [href]="url"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {{ locale.translate('home.branchesDirections') }}
+                </a>
+              }
+            </div>
+          </li>
+        }
+      </ul>
+    </div>
+  }
+</section>

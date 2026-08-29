@@ -2,6 +2,7 @@ import { SupportedLocale } from '../../core/http/api-endpoints';
 import { safeImageSource, safePublicLink } from '../../core/security/public-url.utils';
 import { contrastRatio } from '../../core/theme/theme.utils';
 import { HeaderConfig, HeaderNavigationItem } from './header.models';
+import { normalizePublicRouteIndex } from '../catalog/public-route-index';
 
 export function normalizeHeaderConfig(source: unknown, locale: SupportedLocale): HeaderConfig {
   const root = asRecord(source);
@@ -91,6 +92,20 @@ export function fallbackHeaderConfig(locale: SupportedLocale): HeaderConfig {
     navigation: [],
     actions: []
   };
+}
+
+export function normalizeCategoryNavigation(
+  source: unknown,
+  locale: SupportedLocale
+): readonly HeaderNavigationItem[] {
+  return normalizePublicRouteIndex(source, 'category', locale).map((entry) => ({
+    id: `category-${entry.id}`,
+    label: entry.label,
+    url: entry.path,
+    external: false,
+    openInNewTab: false,
+    children: []
+  }));
 }
 
 function normalizeNavigation(

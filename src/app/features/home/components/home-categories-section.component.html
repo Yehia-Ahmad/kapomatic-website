@@ -1,0 +1,114 @@
+<section class="mx-auto max-w-content px-4 py-8 sm:py-10" [style.background-color]="backgroundColor || null">
+  <div class="flex items-end justify-between gap-4">
+    <div>
+      <h2 class="text-xl font-extrabold text-text sm:text-2xl lg:text-3xl">
+        {{ title || locale.translate('home.categories') }}
+      </h2>
+      @if (subtitle) {
+        <p class="mt-2 max-w-2xl text-sm leading-7 text-text-muted">{{ subtitle }}</p>
+      }
+    </div>
+    @if (settings.viewAllUrl) {
+      <a
+        class="hidden min-h-11 shrink-0 items-center gap-2 rounded-md px-2 text-sm font-extrabold text-brand-active hover:bg-brand-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand sm:inline-flex"
+        [routerLink]="localizedUrl(settings.viewAllUrl)"
+      >
+        <span>{{ settings.viewAllLabel || locale.translate('home.viewAll') }}</span>
+        <fa-icon [icon]="locale.direction() === 'rtl' ? icons.left : icons.right" aria-hidden="true" />
+      </a>
+    }
+  </div>
+
+  @if (categories.status() === 'loading' || categories.status() === 'idle') {
+    <div
+      class="home-grid mt-5"
+      aria-hidden="true"
+      [style.--columns-mobile]="settings.columns.mobile"
+      [style.--columns-tablet]="settings.columns.tablet"
+      [style.--columns-desktop]="settings.columns.desktop"
+    >
+      @for (item of [1, 2, 3, 4, 5]; track item) {
+        <div class="animate-pulse rounded-lg border border-border bg-surface p-3 shadow-sm">
+          <div class="aspect-square rounded-lg bg-surface-muted"></div>
+          <div class="mt-3 h-5 w-2/3 rounded-full bg-surface-muted"></div>
+          <div class="mt-2 h-4 w-1/3 rounded-full bg-surface-muted"></div>
+        </div>
+      }
+    </div>
+    <p class="sr-only" role="status">{{ locale.translate('home.categoriesLoading') }}</p>
+  } @else if (categories.categories().length > 0) {
+    @if (
+      categories.status() === 'refreshing' ||
+      categories.status() === 'error' ||
+      categories.status() === 'malformed'
+    ) {
+      <div
+        class="mt-5 flex items-start gap-3 rounded-lg border border-warning/40 bg-amber-50 p-4 text-sm"
+        [attr.role]="categories.status() === 'refreshing' ? 'status' : 'alert'"
+      >
+        @if (categories.status() === 'refreshing') {
+          <fa-icon class="mt-0.5 animate-spin text-text-muted" [icon]="icons.retry" aria-hidden="true" />
+          <p class="flex-1">{{ locale.translate('home.categoriesRefreshing') }}</p>
+        } @else {
+          <fa-icon class="mt-0.5 text-warning" [icon]="icons.warning" aria-hidden="true" />
+          <p class="flex-1">
+            {{
+              categories.status() === 'malformed'
+                ? locale.translate('home.categoriesMalformed')
+                : locale.translate('home.categoriesError')
+            }}
+          </p>
+          <button
+            type="button"
+            class="min-h-11 shrink-0 rounded-md px-3 font-extrabold text-brand-active hover:bg-brand-soft"
+            (click)="categories.retry()"
+          >
+            {{ locale.translate('home.categoriesRetry') }}
+          </button>
+        }
+      </div>
+    }
+    <div
+      class="home-grid mt-5"
+      [style.--columns-mobile]="settings.columns.mobile"
+      [style.--columns-tablet]="settings.columns.tablet"
+      [style.--columns-desktop]="settings.columns.desktop"
+    >
+      @for (category of categories.categories(); track category.id) {
+        <app-home-category-card
+          [category]="category"
+          [imageShape]="settings.imageShape"
+          [imageBorderRadius]="settings.imageBorderRadius"
+          [showCategoryName]="settings.showCategoryName"
+        />
+      }
+    </div>
+  } @else if (categories.status() === 'empty') {
+    <div class="mt-5 rounded-xl border border-border bg-surface px-5 py-12 text-center shadow-sm">
+      <h3 class="text-lg font-extrabold">{{ locale.translate('home.categoriesEmptyTitle') }}</h3>
+      <p class="mt-2 text-sm text-text-muted">{{ locale.translate('home.categoriesEmptyDescription') }}</p>
+    </div>
+  } @else {
+    <div
+      class="mt-5 rounded-xl border border-border bg-surface px-5 py-12 text-center shadow-sm"
+      role="alert"
+    >
+      <fa-icon class="text-3xl text-danger" [icon]="icons.warning" aria-hidden="true" />
+      <h3 class="mt-3 text-lg font-extrabold">{{ locale.translate('home.categoriesErrorTitle') }}</h3>
+      <p class="mt-2 text-sm text-text-muted">
+        {{
+          categories.status() === 'malformed'
+            ? locale.translate('home.categoriesMalformed')
+            : locale.translate('home.categoriesError')
+        }}
+      </p>
+      <button
+        type="button"
+        class="mt-5 min-h-11 rounded-lg bg-brand px-5 font-extrabold text-brand-foreground hover:bg-brand-hover"
+        (click)="categories.retry()"
+      >
+        {{ locale.translate('home.categoriesRetry') }}
+      </button>
+    </div>
+  }
+</section>

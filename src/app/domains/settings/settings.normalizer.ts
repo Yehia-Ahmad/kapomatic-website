@@ -1,8 +1,8 @@
 import {
   DEFAULT_STOREFRONT_SETTINGS,
+  BranchLocation,
   PersistedStorefrontSettingsV1,
   SocialMediaLink,
-  StoreLocation,
   StorefrontSettings
 } from './settings.models';
 
@@ -38,23 +38,66 @@ export function readPersistedSettings(source: unknown): PersistedStorefrontSetti
   };
 }
 
-function normalizeLocations(source: unknown): readonly StoreLocation[] {
+function normalizeLocations(source: unknown): readonly BranchLocation[] {
   if (!Array.isArray(source)) return [];
   return source
-    .map((entry, index) => {
+    .map((entry, index): BranchLocation | null => {
       const record = asRecord(entry);
       const name = readString(record['name']);
-      const detailedLocation = readString(record['detailedLocation']);
-      const mapLink = safeHttpUrl(readString(record['mapLink']));
-      if (!name || !mapLink) return null;
+      if (!name) return null;
+      const googleMapsUrl = safeGoogleMapsUrl(
+        readString(record['mapLink'] ?? record['googleMapsUrl'])
+      );
+      const coordinates = readCoordinates(record, googleMapsUrl);
       return {
         id: readString(record['id'] ?? record['_id']) || `location-${index}`,
         name,
-        detailedLocation,
-        mapLink
+        address: readString(record['detailedLocation'] ?? record['address']) || undefined,
+        phone: readString(record['phone']) || undefined,
+        latitude: coordinates?.latitude ?? Number.NaN,
+        longitude: coordinates?.longitude ?? Number.NaN,
+        googleMapsUrl: googleMapsUrl || undefined
       };
     })
-    .filter((item): item is StoreLocation => item !== null);
+    .filter((item): item is BranchLocation => item !== null);
+}
+
+export function hasValidBranchCoordinates(branch: Pick<BranchLocation, 'latitude' | 'longitude'>): boolean {
+  return (
+    Number.isFinite(branch.latitude) &&
+    Number.isFinite(branch.longitude) &&
+    Math.abs(branch.latitude) <= 90 &&
+    Math.abs(branch.longitude) <= 180
+  );
+}
+
+function readCoordinates(
+  record: Record<string, unknown>,
+  googleMapsUrl: string
+): Pick<BranchLocation, 'latitude' | 'longitude'> | null {
+  const direct = {
+    latitude: coordinateNumber(record['latitude']),
+    longitude: coordinateNumber(record['longitude'])
+  };
+  if (hasValidBranchCoordinates(direct)) return direct;
+  if (!googleMapsUrl) return null;
+
+  const exactPlace = googleMapsUrl.match(/!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/i);
+  const viewport = googleMapsUrl.match(/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)(?:,|\/|$)/);
+  const query = new URL(googleMapsUrl).searchParams
+    .get('query')
+    ?.match(/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/);
+  const match = exactPlace ?? query ?? viewport;
+  if (!match) return null;
+
+  const coordinates = { latitude: Number(match[1]), longitude: Number(match[2]) };
+  return hasValidBranchCoordinates(coordinates) ? coordinates : null;
+}
+
+function coordinateNumber(value: unknown): number {
+  if (typeof value === 'number') return value;
+  if (typeof value !== 'string' || !value.trim()) return Number.NaN;
+  return Number(value);
 }
 
 function normalizeSocialLinks(source: unknown): readonly SocialMediaLink[] {
@@ -103,6 +146,19 @@ function safeHttpUrl(value: string): string {
   } catch {
     return '';
   }
+}
+
+function safeGoogleMapsUrl(value: string): string {
+  const safeUrl = safeHttpUrl(value);
+  if (!safeUrl) return '';
+  const url = new URL(safeUrl);
+  const host = url.hostname.toLowerCase();
+  return host === 'google.com' ||
+    host.endsWith('.google.com') ||
+    host === 'goo.gl' ||
+    host === 'maps.app.goo.gl'
+    ? url.toString()
+    : '';
 }
 
 function firstRecord(...values: unknown[]): Record<string, unknown> {

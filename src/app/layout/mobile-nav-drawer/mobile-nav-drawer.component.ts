@@ -16,7 +16,7 @@ import {
 import { RouterLink } from '@angular/router';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { faWhatsapp } from '@fortawesome/free-brands-svg-icons';
-import { faGlobe, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { faLanguage, faXmark } from '@fortawesome/free-solid-svg-icons';
 import { LocaleService } from '../../core/i18n/locale.service';
 import { localizedInternalUrl } from '../../core/security/public-url.utils';
 import { HeaderNavigationItem } from '../../domains/header/header.models';
@@ -33,7 +33,7 @@ export class MobileNavDrawerComponent implements AfterViewInit, OnDestroy {
   private readonly document = inject(DOCUMENT);
   private readonly renderer = inject(Renderer2);
   protected readonly locale = inject(LocaleService);
-  protected readonly icons = { close: faXmark, globe: faGlobe, whatsapp: faWhatsapp };
+  protected readonly icons = { close: faXmark, language: faLanguage, whatsapp: faWhatsapp };
   private previousBodyOverflow = '';
   private skipLink: HTMLElement | null = null;
   private skipLinkWasInert = false;

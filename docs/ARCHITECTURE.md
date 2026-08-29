@@ -25,9 +25,10 @@ flowchart LR
 | SEO                         | Titles, metadata, canonical, hreflang and JSON-LD primitives                | `src/app/core/seo`                                                           |
 | Theme                       | Validated dynamic semantic tokens and contrast choice                       | `src/app/core/theme`                                                         |
 | Domain settings/header/Home | DTO isolation, runtime normalization, TransferState and state               | `src/app/domains/settings`, `src/app/domains/header`, `src/app/domains/home` |
-| Cart shell                  | Validated versioned display snapshot, duplicate merge and count             | `src/app/domains/cart`                                                       |
+| Catalog                     | Localized Category/Product adapters, public-route index and request cache   | `src/app/domains/catalog`                                                    |
+| Cart                        | Versioned persistence, restoration, product revalidation and derived totals | `src/app/domains/cart`                                                       |
 | Layout                      | Header, desktop navigation, modal mobile drawer, footer and shell           | `src/app/layout`                                                             |
-| Features                    | Implemented Home plus approval-gate placeholders for all later routes       | `src/app/features`                                                           |
+| Features                    | Home, Category, Product Details and Cart; later-route placeholders          | `src/app/features`                                                           |
 
 Catalog/checkout/location domains must follow the implemented DTO → runtime validation → adapter → normalized domain model → store → component direction. The Home page sees only the `HomeSection` discriminated union; no template chooses components from unchecked backend strings.
 
@@ -54,7 +55,7 @@ sequenceDiagram
   B->>P: settings-only non-blocking revalidation
 ```
 
-`localStorage` is browser-only, versioned and non-authoritative. Settings cache can seed a degraded render before revalidation. Cart persistence stores validated IDs, quantities, and display snapshots; all price/stock data must be revalidated by later cart/checkout APIs. Header and Home use locale-keyed normalized `TransferState`. Angular's raw HTTP transfer cache is disabled so permissive backend DTOs are not serialized a second time.
+`localStorage` is browser-only, versioned and non-authoritative. Settings cache can seed a degraded render before revalidation. Cart persistence stores validated IDs, quantities and normalized display/navigation snapshots. After restoration, `CartFacade` revalidates each line through the localized public Product API and merges current image, slug, name, price and stock into view models without deleting unavailable lines. Header, Home, Home Categories, Category and Product use normalized `TransferState`; customer Cart content never does. Angular's raw HTTP transfer cache is disabled so permissive backend DTOs are not serialized a second time.
 
 ## Home capability boundary
 
@@ -73,7 +74,9 @@ flowchart TD
   Regions -->|malformed optional section| Partial[Omit section + localized warning]
 ```
 
-Header uses its own `GET /header` adapter. It owns header/navigation capability; general settings remain authoritative for semantic color, general logo fallback, locations, social links, currency, and free-shipping threshold. If header is unavailable, a localized internal navigation fallback is used without inventing contact details or branding.
+Header uses its own `GET /header` adapter. It owns header/navigation capability; general settings remain authoritative for semantic color, general logo fallback, locations, social links, currency, and free-shipping threshold. If that optional endpoint is unavailable, the public localized category sitemap supplies authoritative category children inside the neutral catalog navigation without inventing content.
+
+The Browse Categories renderer deliberately does not consume `HomeSection.categories`. `HomePageComponent` starts one locale-keyed `HomeCategoriesStore` load, and every category-section marker delegates its title/layout settings to `HomeCategoriesSectionComponent` while card data comes only from `GET /public/:lang/categories/home?limit=12`. If the Home builder has no category marker, the page renders the same section with safe existing defaults. The DTO adapter validates before producing `HomeCategory`; the service owns URL construction and normalized TransferState; the store owns loading/refresh/empty/error/malformed state and ignores stale-language responses. Cards use only the returned active slug for `/:lang/categories/:categorySlug` and the returned aggregate Product count.
 
 ## Runtime-provider separation
 
@@ -95,7 +98,7 @@ Target localized routes:
 /:lang/not-found
 ```
 
-`localeMatcher` consumes only `ar` and `en`. Legacy `/cart`, `/checkout`, `/locations`, and `/products` declarations appear first. `/products/:legacyId` is intentionally retained without fabricating an ID-to-slug redirect; the real resolver is a later catalog task. Unknown routes use the not-found page, and Express returns 404 for structurally unknown URLs.
+`localeMatcher` consumes only `ar` and `en`. Legacy `/cart`, `/checkout`, `/locations`, and `/products` declarations appear first. The non-localized `/products/:legacyId` compatibility route remains separate. Inside localized Category/Product routes, a backend-supported ID lookup is permitted only as a resolver: when the response exposes a different localized slug, SSR and the browser replace it with a 301 canonical route. Unknown routes use the not-found page, and Express returns 404 for structurally unknown URLs.
 
 ## State rules
 
@@ -107,4 +110,4 @@ Target localized routes:
 
 ## Design approval boundary
 
-Home and the shared shell are approved and implemented from Home v3. `FoundationPlaceholderPageComponent` remains temporary technical evidence for category, search, product, cart, checkout, locations and not-found routes; it is not approval to implement those pages.
+Home and the shared shell are based on approved Home v3. Category and Cart follow the approved visual direction; Product Details follows the documented direct implementation decision. `FoundationPlaceholderPageComponent` remains only for Search, Checkout, Locations, the non-localized legacy Product route and not-found presentation.

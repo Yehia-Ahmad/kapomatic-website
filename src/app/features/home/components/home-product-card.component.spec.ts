@@ -19,6 +19,7 @@ describe('HomeProductCardComponent', () => {
     name: 'Transmission filter',
     code: 'KAP-1',
     slug: 'transmission-filter',
+    alternateSlugs: { ar: 'فلتر-فتيس', en: 'transmission-filter' },
     imageUrl: '',
     imageAlt: 'Transmission filter',
     price: { regular: 100, sale: null, discountPercentage: 0 },
@@ -61,7 +62,8 @@ describe('HomeProductCardComponent', () => {
 
     expect(add).toHaveBeenCalledWith(
       'product-1',
-      jasmine.objectContaining({ name: 'Transmission filter', unitPrice: 100 })
+      jasmine.objectContaining({ name: 'Transmission filter', unitPrice: 100 }),
+      jasmine.objectContaining({ availability: 'in-stock', maximumQuantity: 2 })
     );
     expect(announce).toHaveBeenCalled();
   });

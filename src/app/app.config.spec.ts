@@ -44,6 +44,7 @@ describe('application runtime configuration', () => {
       await Promise.all(results.map((result) => Promise.resolve(result)));
 
       expect(get).toHaveBeenCalledWith('/api/ecommerce-settings/general');
+      expect(get).toHaveBeenCalledTimes(1);
       expect(injector.get(StorefrontSettingsStore).status()).toBe('ready');
       expect(calls).toEqual(['locale', 'theme']);
       expect(

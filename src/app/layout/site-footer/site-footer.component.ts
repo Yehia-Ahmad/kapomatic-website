@@ -18,7 +18,7 @@ import {
   faXTwitter,
   faYoutube
 } from '@fortawesome/free-brands-svg-icons';
-import { faEnvelope, faGlobe, faLink, faLocationDot, faPhone } from '@fortawesome/free-solid-svg-icons';
+import { faEnvelope, faLanguage, faLink, faLocationDot, faPhone } from '@fortawesome/free-solid-svg-icons';
 import { LocaleService } from '../../core/i18n/locale.service';
 import { localizedInternalUrl } from '../../core/security/public-url.utils';
 import { HeaderContact, HeaderNavigationItem } from '../../domains/header/header.models';
@@ -36,7 +36,7 @@ export class SiteFooterComponent {
   protected readonly year = new Date().getFullYear();
   protected readonly icons = {
     envelope: faEnvelope,
-    globe: faGlobe,
+    language: faLanguage,
     location: faLocationDot,
     phone: faPhone,
     whatsapp: faWhatsapp

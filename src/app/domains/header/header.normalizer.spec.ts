@@ -1,4 +1,8 @@
-import { fallbackHeaderConfig, normalizeHeaderConfig } from './header.normalizer';
+import {
+  fallbackHeaderConfig,
+  normalizeCategoryNavigation,
+  normalizeHeaderConfig
+} from './header.normalizer';
 
 describe('Header response normalizer', () => {
   it('maps localized navigation and keeps only safe links', () => {
@@ -38,5 +42,26 @@ describe('Header response normalizer', () => {
     expect(fallback.topBar.visible).toBeFalse();
     expect(fallback.contact.showWhatsapp).toBeFalse();
     expect(fallback.navigation).toEqual([]);
+  });
+
+  it('builds localized category navigation from the public category index', () => {
+    const navigation = normalizeCategoryNavigation(
+      {
+        data: [
+          {
+            loc: 'https://kapomatic.com/ar/categories/فلاتر-فتيس',
+            image: {
+              loc: 'https://kapomatic.com/api/public/images/categorys/category-1',
+              title: 'فلاتر'
+            }
+          }
+        ]
+      },
+      'ar'
+    );
+
+    expect(navigation[0]).toEqual(
+      jasmine.objectContaining({ url: '/ar/categories/فلاتر-فتيس', label: 'فلاتر' })
+    );
   });
 });

@@ -19,7 +19,7 @@
         ".superdesign/design-system.md": "8276f434563e477fdb7a25675a7415af6ded263c8e84cf3acfb04e8ce7f8ebe7",
         "src/styles.scss": "bacfc26350e43a123c6c103cdf6dca3be7dcacc698618557ac440ca8be195a7d",
         "tailwind.config.js": "cdca3319031149f11ab53afe72e46f1428594d0772a69ab96168a456665a2991",
-        "src/app/app.routes.ts": "f6709fc294c9a51f7709e5e505dcfa1b73be2266a45e7cbc0558c68a23985abb",
+        "src/app/app.routes.ts": "f13f0915552eb477205a846e7aa6a2f0d58065e76858f25be7e93359f36f2a52",
         "PROJECT_REBUILD_SPECIFICATION.md": "5e9c83424b07cd3c277cf35b9c719399cb292218384c9074b556598ab54fe104"
       },
       "components": [],
@@ -30,7 +30,193 @@
           "currentVersion": 3
         }
       },
-      "updatedAt": "2026-08-22T21:34:51Z"
+      "updatedAt": "2026-08-25T19:20:07Z"
+    },
+    "/:lang/categories/:categorySlug": {
+      "targetKind": "new-ui",
+      "projectId": "cad6319c-8787-4813-8f8d-c968aa2d4ba6",
+      "activeDraftId": "1487e4c1-7a17-4ff8-9a4c-83eeb3967296",
+      "sourceTarget": "/",
+      "sourceDraftId": "3d6cca6e-3a4b-405d-b2c7-8371074061cc",
+      "designSystemPath": ".superdesign/design-system.md",
+      "referenceIds": [],
+      "contextFiles": [
+        ".superdesign/design-system.md",
+        "src/styles.scss",
+        "tailwind.config.js",
+        "src/app/app.routes.ts",
+        "PROJECT_REBUILD_SPECIFICATION.md:361:393",
+        "PROJECT_REBUILD_SPECIFICATION.md:620:704",
+        "src/app/layout/storefront-shell/storefront-shell.component.ts",
+        "src/app/layout/storefront-shell/storefront-shell.component.html",
+        "src/app/layout/site-header/site-header.component.ts",
+        "src/app/layout/site-header/site-header.component.html",
+        "src/app/layout/mobile-nav-drawer/mobile-nav-drawer.component.ts",
+        "src/app/layout/mobile-nav-drawer/mobile-nav-drawer.component.html",
+        "src/app/layout/site-footer/site-footer.component.html",
+        "src/app/features/home/components/home-product-card.component.ts",
+        "src/app/features/home/components/home-product-card.component.html",
+        "src/app/domains/cart/cart.models.ts",
+        "src/app/domains/cart/cart.store.ts",
+        "src/app/core/i18n/translations.ts",
+        "docs/API_CONTRACTS.md",
+        "docs/SSR_AND_SEO.md"
+      ],
+      "fingerprints": {
+        ".superdesign/design-system.md": "8276f434563e477fdb7a25675a7415af6ded263c8e84cf3acfb04e8ce7f8ebe7",
+        "src/styles.scss": "bacfc26350e43a123c6c103cdf6dca3be7dcacc698618557ac440ca8be195a7d",
+        "tailwind.config.js": "cdca3319031149f11ab53afe72e46f1428594d0772a69ab96168a456665a2991",
+        "src/app/app.routes.ts": "f13f0915552eb477205a846e7aa6a2f0d58065e76858f25be7e93359f36f2a52",
+        "PROJECT_REBUILD_SPECIFICATION.md": "5e9c83424b07cd3c277cf35b9c719399cb292218384c9074b556598ab54fe104",
+        "src/app/layout/storefront-shell/storefront-shell.component.ts": "e57b54f312af98c9f86a580f0a84754584218cc3428e3fc5fe049075c59445e3",
+        "src/app/layout/storefront-shell/storefront-shell.component.html": "5e313786d90ae4d38c80bdba158a504fe7a5d4ba4f6ba17fbd05c020b29448f3",
+        "src/app/layout/site-header/site-header.component.ts": "238e53181b0463a6e7abb4b3c0e533b375682aadf06eff6b99a36c95c0ef99d3",
+        "src/app/layout/site-header/site-header.component.html": "9557fbd20e80321afc21269a0289c8c0f41d4af13c9130022bee0630cb719a7e",
+        "src/app/layout/mobile-nav-drawer/mobile-nav-drawer.component.ts": "93a4cd25815ac3c841c5782d9d2c8a35acaec46d45f9409580df932640a8f535",
+        "src/app/layout/mobile-nav-drawer/mobile-nav-drawer.component.html": "e0cd69673d5687fb56d283edf4191911728b99e8957d68a02bbbbf175f45a831",
+        "src/app/layout/site-footer/site-footer.component.html": "6474b98ba4a2ec2e7704abcdc52fc08752f271116f036b215c5f5255a3337e7d",
+        "src/app/features/home/components/home-product-card.component.ts": "61692fb493eb64f06ce63f1e90ed4648b1b7d0362908ab5b406d08f10765669d",
+        "src/app/features/home/components/home-product-card.component.html": "6438f326f354251075d5b5f40706dbdee937be95a90a9efd8f7d4b7b547110cf",
+        "src/app/domains/cart/cart.models.ts": "917bcb17ad34468b079b4418d2c816cdfa15875d5418c814f30b4cac7c52c142",
+        "src/app/domains/cart/cart.store.ts": "6726cdded52a7c11ab3a5ce23244bf81049dfea17c8a465cb8daab5a61c7c317",
+        "src/app/core/i18n/translations.ts": "391cb48d092373cd09ac1bac98baedad1358d9c736031ea79f0d2c6b32124cb2",
+        "docs/API_CONTRACTS.md": "a22f1fde44719160f5d56114e0beea5d49d2bca38f32bd860633fbf001581334",
+        "docs/SSR_AND_SEO.md": "dd563e60a0a370f68589418170a15b333fda191a8d1efbb235b694b2188c6827"
+      },
+      "components": [],
+      "drafts": {
+        "1487e4c1-7a17-4ff8-9a4c-83eeb3967296": {
+          "title": "Kapomatic Category Products Experience",
+          "visualDirection": "Model-generated v1 derived from Home v3; unapproved because generated catalog, price, result-count, brand and specification values violate the no-fabrication brief",
+          "parentDraftId": "3d6cca6e-3a4b-405d-b2c7-8371074061cc",
+          "currentVersion": 1
+        }
+      },
+      "updatedAt": "2026-08-25T19:20:07Z"
+    },
+    "/:lang/products/:productSlug": {
+      "targetKind": "new-ui",
+      "projectId": "cad6319c-8787-4813-8f8d-c968aa2d4ba6",
+      "activeDraftId": "391f5bc6-b831-4559-aa33-83ac85416572",
+      "sourceTarget": "/",
+      "sourceDraftId": "3d6cca6e-3a4b-405d-b2c7-8371074061cc",
+      "designSystemPath": ".superdesign/design-system.md",
+      "referenceIds": [],
+      "contextFiles": [
+        ".superdesign/design-system.md",
+        "src/styles.scss",
+        "tailwind.config.js",
+        "src/app/app.routes.ts",
+        "PROJECT_REBUILD_SPECIFICATION.md:361:393",
+        "PROJECT_REBUILD_SPECIFICATION.md:620:704",
+        "src/app/layout/storefront-shell/storefront-shell.component.ts",
+        "src/app/layout/storefront-shell/storefront-shell.component.html",
+        "src/app/layout/site-header/site-header.component.ts",
+        "src/app/layout/site-header/site-header.component.html",
+        "src/app/layout/mobile-nav-drawer/mobile-nav-drawer.component.ts",
+        "src/app/layout/mobile-nav-drawer/mobile-nav-drawer.component.html",
+        "src/app/layout/site-footer/site-footer.component.html",
+        "src/app/features/home/components/home-product-card.component.ts",
+        "src/app/features/home/components/home-product-card.component.html",
+        "src/app/domains/cart/cart.models.ts",
+        "src/app/domains/cart/cart.store.ts",
+        "src/app/core/i18n/translations.ts",
+        "docs/API_CONTRACTS.md",
+        "docs/SSR_AND_SEO.md"
+      ],
+      "fingerprints": {
+        ".superdesign/design-system.md": "8276f434563e477fdb7a25675a7415af6ded263c8e84cf3acfb04e8ce7f8ebe7",
+        "src/styles.scss": "bacfc26350e43a123c6c103cdf6dca3be7dcacc698618557ac440ca8be195a7d",
+        "tailwind.config.js": "cdca3319031149f11ab53afe72e46f1428594d0772a69ab96168a456665a2991",
+        "src/app/app.routes.ts": "f13f0915552eb477205a846e7aa6a2f0d58065e76858f25be7e93359f36f2a52",
+        "PROJECT_REBUILD_SPECIFICATION.md": "5e9c83424b07cd3c277cf35b9c719399cb292218384c9074b556598ab54fe104",
+        "src/app/layout/storefront-shell/storefront-shell.component.ts": "e57b54f312af98c9f86a580f0a84754584218cc3428e3fc5fe049075c59445e3",
+        "src/app/layout/storefront-shell/storefront-shell.component.html": "5e313786d90ae4d38c80bdba158a504fe7a5d4ba4f6ba17fbd05c020b29448f3",
+        "src/app/layout/site-header/site-header.component.ts": "238e53181b0463a6e7abb4b3c0e533b375682aadf06eff6b99a36c95c0ef99d3",
+        "src/app/layout/site-header/site-header.component.html": "9557fbd20e80321afc21269a0289c8c0f41d4af13c9130022bee0630cb719a7e",
+        "src/app/layout/mobile-nav-drawer/mobile-nav-drawer.component.ts": "93a4cd25815ac3c841c5782d9d2c8a35acaec46d45f9409580df932640a8f535",
+        "src/app/layout/mobile-nav-drawer/mobile-nav-drawer.component.html": "e0cd69673d5687fb56d283edf4191911728b99e8957d68a02bbbbf175f45a831",
+        "src/app/layout/site-footer/site-footer.component.html": "6474b98ba4a2ec2e7704abcdc52fc08752f271116f036b215c5f5255a3337e7d",
+        "src/app/features/home/components/home-product-card.component.ts": "61692fb493eb64f06ce63f1e90ed4648b1b7d0362908ab5b406d08f10765669d",
+        "src/app/features/home/components/home-product-card.component.html": "6438f326f354251075d5b5f40706dbdee937be95a90a9efd8f7d4b7b547110cf",
+        "src/app/domains/cart/cart.models.ts": "917bcb17ad34468b079b4418d2c816cdfa15875d5418c814f30b4cac7c52c142",
+        "src/app/domains/cart/cart.store.ts": "6726cdded52a7c11ab3a5ce23244bf81049dfea17c8a465cb8daab5a61c7c317",
+        "src/app/core/i18n/translations.ts": "391cb48d092373cd09ac1bac98baedad1358d9c736031ea79f0d2c6b32124cb2",
+        "docs/API_CONTRACTS.md": "a22f1fde44719160f5d56114e0beea5d49d2bca38f32bd860633fbf001581334",
+        "docs/SSR_AND_SEO.md": "dd563e60a0a370f68589418170a15b333fda191a8d1efbb235b694b2188c6827"
+      },
+      "components": [],
+      "drafts": {
+        "391f5bc6-b831-4559-aa33-83ac85416572": {
+          "title": "Kapomatic Product Details Placeholder",
+          "visualDirection": "Model-generated v1 failed the brief and contains only a placeholder page; unapproved",
+          "parentDraftId": "3d6cca6e-3a4b-405d-b2c7-8371074061cc",
+          "currentVersion": 1
+        }
+      },
+      "updatedAt": "2026-08-25T19:20:07Z"
+    },
+    "/:lang/cart": {
+      "targetKind": "new-ui",
+      "projectId": "cad6319c-8787-4813-8f8d-c968aa2d4ba6",
+      "activeDraftId": "36037094-b766-496d-b984-d16bfd14fb58",
+      "sourceTarget": "/",
+      "sourceDraftId": "3d6cca6e-3a4b-405d-b2c7-8371074061cc",
+      "designSystemPath": ".superdesign/design-system.md",
+      "referenceIds": [],
+      "contextFiles": [
+        ".superdesign/design-system.md",
+        "src/styles.scss",
+        "tailwind.config.js",
+        "src/app/app.routes.ts",
+        "PROJECT_REBUILD_SPECIFICATION.md:361:393",
+        "PROJECT_REBUILD_SPECIFICATION.md:620:704",
+        "src/app/layout/storefront-shell/storefront-shell.component.ts",
+        "src/app/layout/storefront-shell/storefront-shell.component.html",
+        "src/app/layout/site-header/site-header.component.ts",
+        "src/app/layout/site-header/site-header.component.html",
+        "src/app/layout/mobile-nav-drawer/mobile-nav-drawer.component.ts",
+        "src/app/layout/mobile-nav-drawer/mobile-nav-drawer.component.html",
+        "src/app/layout/site-footer/site-footer.component.html",
+        "src/app/features/home/components/home-product-card.component.ts",
+        "src/app/features/home/components/home-product-card.component.html",
+        "src/app/domains/cart/cart.models.ts",
+        "src/app/domains/cart/cart.store.ts",
+        "src/app/core/i18n/translations.ts",
+        "docs/API_CONTRACTS.md",
+        "docs/SSR_AND_SEO.md"
+      ],
+      "fingerprints": {
+        ".superdesign/design-system.md": "8276f434563e477fdb7a25675a7415af6ded263c8e84cf3acfb04e8ce7f8ebe7",
+        "src/styles.scss": "bacfc26350e43a123c6c103cdf6dca3be7dcacc698618557ac440ca8be195a7d",
+        "tailwind.config.js": "cdca3319031149f11ab53afe72e46f1428594d0772a69ab96168a456665a2991",
+        "src/app/app.routes.ts": "f13f0915552eb477205a846e7aa6a2f0d58065e76858f25be7e93359f36f2a52",
+        "PROJECT_REBUILD_SPECIFICATION.md": "5e9c83424b07cd3c277cf35b9c719399cb292218384c9074b556598ab54fe104",
+        "src/app/layout/storefront-shell/storefront-shell.component.ts": "e57b54f312af98c9f86a580f0a84754584218cc3428e3fc5fe049075c59445e3",
+        "src/app/layout/storefront-shell/storefront-shell.component.html": "5e313786d90ae4d38c80bdba158a504fe7a5d4ba4f6ba17fbd05c020b29448f3",
+        "src/app/layout/site-header/site-header.component.ts": "238e53181b0463a6e7abb4b3c0e533b375682aadf06eff6b99a36c95c0ef99d3",
+        "src/app/layout/site-header/site-header.component.html": "9557fbd20e80321afc21269a0289c8c0f41d4af13c9130022bee0630cb719a7e",
+        "src/app/layout/mobile-nav-drawer/mobile-nav-drawer.component.ts": "93a4cd25815ac3c841c5782d9d2c8a35acaec46d45f9409580df932640a8f535",
+        "src/app/layout/mobile-nav-drawer/mobile-nav-drawer.component.html": "e0cd69673d5687fb56d283edf4191911728b99e8957d68a02bbbbf175f45a831",
+        "src/app/layout/site-footer/site-footer.component.html": "6474b98ba4a2ec2e7704abcdc52fc08752f271116f036b215c5f5255a3337e7d",
+        "src/app/features/home/components/home-product-card.component.ts": "61692fb493eb64f06ce63f1e90ed4648b1b7d0362908ab5b406d08f10765669d",
+        "src/app/features/home/components/home-product-card.component.html": "6438f326f354251075d5b5f40706dbdee937be95a90a9efd8f7d4b7b547110cf",
+        "src/app/domains/cart/cart.models.ts": "917bcb17ad34468b079b4418d2c816cdfa15875d5418c814f30b4cac7c52c142",
+        "src/app/domains/cart/cart.store.ts": "6726cdded52a7c11ab3a5ce23244bf81049dfea17c8a465cb8daab5a61c7c317",
+        "src/app/core/i18n/translations.ts": "391cb48d092373cd09ac1bac98baedad1358d9c736031ea79f0d2c6b32124cb2",
+        "docs/API_CONTRACTS.md": "a22f1fde44719160f5d56114e0beea5d49d2bca38f32bd860633fbf001581334",
+        "docs/SSR_AND_SEO.md": "dd563e60a0a370f68589418170a15b333fda191a8d1efbb235b694b2188c6827"
+      },
+      "components": [],
+      "drafts": {
+        "36037094-b766-496d-b984-d16bfd14fb58": {
+          "title": "Kapomatic Cart Experience",
+          "visualDirection": "Model-generated v1 derived from Home v3; unapproved because it is Arabic-only, fabricates cart products and prices, and omits required mobile, state and dialog behavior",
+          "parentDraftId": "3d6cca6e-3a4b-405d-b2c7-8371074061cc",
+          "currentVersion": 1
+        }
+      },
+      "updatedAt": "2026-08-25T19:20:07Z"
     }
   }
 }

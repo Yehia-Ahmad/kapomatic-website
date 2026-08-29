@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { APP_RUNTIME_CONFIG } from '../config/app-runtime-config';
+import { apiAwareImageSource } from '../security/public-url.utils';
 
 @Injectable({ providedIn: 'root' })
 export class ApiUrlBuilder {
@@ -8,6 +9,10 @@ export class ApiUrlBuilder {
   api(path: string): string {
     const normalizedPath = `/${path.trim().replace(/^\/+/, '')}`;
     return `${this.config.apiBaseUrl.replace(/\/+$/, '')}${normalizedPath}`;
+  }
+
+  image(source: unknown): string {
+    return apiAwareImageSource(source, this.config.apiBaseUrl);
   }
 
   site(path = '/'): string {

@@ -1,0 +1,291 @@
+<main id="main-content" class="min-h-[60vh] bg-canvas" tabindex="-1">
+  <div class="mx-auto max-w-content px-4 py-6 sm:px-6 lg:px-8">
+    <nav [attr.aria-label]="locale.translate('cart.breadcrumb')" class="mb-6 text-sm text-text-muted">
+      <ol class="flex items-center gap-2">
+        <li>
+          <a class="hover:text-text" [routerLink]="['/', locale.locale()]">{{
+            locale.translate('nav.home')
+          }}</a>
+        </li>
+        <li aria-hidden="true">/</li>
+        <li class="font-bold text-text" aria-current="page">{{ locale.translate('cart.title') }}</li>
+      </ol>
+    </nav>
+
+    <h1 #cartHeading class="text-3xl font-extrabold sm:text-4xl" tabindex="-1">
+      {{ locale.translate('cart.title') }}
+    </h1>
+    <p class="mt-2 text-text-muted">
+      {{ locale.interpolate('cart.itemCount', { count: cart.store.count() }) }}
+    </p>
+
+    @if (!cart.store.restored()) {
+      <div class="mt-8 grid animate-pulse gap-8 lg:grid-cols-[minmax(0,1fr)_24rem]" aria-hidden="true">
+        <div class="space-y-4">
+          @for (item of [1, 2, 3]; track item) {
+            <div class="h-36 rounded-xl bg-surface-muted"></div>
+          }
+        </div>
+        <div class="h-80 rounded-xl bg-surface-muted"></div>
+      </div>
+      <p class="sr-only" role="status">{{ locale.translate('cart.restoring') }}</p>
+    } @else if (cart.lines().length === 0) {
+      <section
+        class="mx-auto mt-8 max-w-xl rounded-xl border border-border bg-surface px-5 py-16 text-center shadow-sm"
+      >
+        <fa-icon class="text-6xl text-text-muted" [icon]="icons.empty" aria-hidden="true" />
+        <h2 class="mt-5 text-2xl font-extrabold">{{ locale.translate('cart.emptyTitle') }}</h2>
+        <p class="mt-3 text-text-muted">{{ locale.translate('cart.emptyDescription') }}</p>
+        @if (cart.store.storageIssue() === 'corrupted') {
+          <p class="mt-4 rounded-md bg-brand-soft p-3 text-sm font-bold text-text" role="status">
+            {{ locale.translate('cart.corruptedRecovery') }}
+          </p>
+        }
+        <a
+          class="mt-6 inline-flex min-h-11 items-center rounded-md bg-brand px-5 font-extrabold text-brand-foreground"
+          [routerLink]="['/', locale.locale()]"
+          >{{ locale.translate('cart.continueShopping') }}</a
+        >
+      </section>
+    } @else {
+      @if (cart.revalidating()) {
+        <p
+          class="mt-5 flex items-center gap-2 rounded-md bg-surface-muted p-3 text-sm text-text-muted"
+          role="status"
+        >
+          <fa-icon class="animate-spin" [icon]="icons.retry" aria-hidden="true" />{{
+            locale.translate('cart.revalidating')
+          }}
+        </p>
+      }
+      @if (cart.hasPartialFailure()) {
+        <div
+          class="mt-5 flex items-start gap-3 rounded-lg border border-warning/40 bg-amber-50 p-4"
+          role="alert"
+        >
+          <fa-icon class="mt-1 text-warning" [icon]="icons.warning" aria-hidden="true" />
+          <p class="min-w-0 flex-1 text-sm">{{ locale.translate('cart.partialFailure') }}</p>
+          <button
+            type="button"
+            class="min-h-11 px-3 text-sm font-extrabold text-brand-active"
+            (click)="cart.retry()"
+          >
+            {{ locale.translate('cart.retry') }}
+          </button>
+        </div>
+      }
+      @if (cart.store.storageIssue() === 'migrated') {
+        <p class="mt-5 rounded-md bg-brand-soft p-3 text-sm font-bold" role="status">
+          {{ locale.translate('cart.migrated') }}
+        </p>
+      }
+
+      <div class="mt-8 grid min-w-0 gap-8 lg:grid-cols-[minmax(0,1fr)_24rem]">
+        <section class="min-w-0 space-y-4" [attr.aria-label]="locale.translate('cart.items')">
+          @for (line of cart.lines(); track line.productId; let index = $index) {
+            <article
+              class="min-w-0 rounded-xl border border-border bg-surface p-4 shadow-sm"
+              [class.border-warning]="
+                line.status === 'price-changed' || line.status === 'temporarily-unavailable'
+              "
+              [class.border-danger]="
+                line.status === 'out-of-stock' || line.status === 'removed' || line.status === 'invalid'
+              "
+            >
+              <div class="flex min-w-0 flex-col gap-4 sm:flex-row">
+                @if (line.slug) {
+                  <a
+                    class="grid h-28 w-28 shrink-0 place-items-center overflow-hidden rounded-md bg-canvas p-2"
+                    [routerLink]="['/', locale.locale(), 'products', line.slug]"
+                    [attr.aria-label]="line.productName"
+                  >
+                    @if (imageAvailable(line)) {
+                      <img
+                        class="h-full w-full object-contain"
+                        [src]="line.imageUrl"
+                        alt=""
+                        width="112"
+                        height="112"
+                        (error)="imageFailed(line)"
+                      />
+                    } @else {
+                      <fa-icon class="text-3xl text-text-muted" [icon]="icons.image" aria-hidden="true" />
+                    }
+                  </a>
+                } @else {
+                  <div class="grid h-28 w-28 shrink-0 place-items-center rounded-md bg-canvas">
+                    <fa-icon class="text-3xl text-text-muted" [icon]="icons.image" aria-hidden="true" />
+                  </div>
+                }
+
+                <div class="min-w-0 flex-1">
+                  <div class="flex min-w-0 flex-col justify-between gap-3 sm:flex-row">
+                    <div class="min-w-0">
+                      @if (line.slug) {
+                        <a
+                          class="break-words font-extrabold hover:text-brand-active"
+                          [routerLink]="['/', locale.locale(), 'products', line.slug]"
+                          >{{ line.productName }}</a
+                        >
+                      } @else {
+                        <h2 class="break-words font-extrabold">{{ line.productName }}</h2>
+                      }
+                      @if (line.product?.shortDescription || line.snapshot.shortDescription) {
+                        <p class="mt-1 line-clamp-2 text-sm text-text-muted">
+                          {{ line.product?.shortDescription || line.snapshot.shortDescription }}
+                        </p>
+                      }
+                    </div>
+                    @if (line.lineTotal !== null) {
+                      <bdi class="shrink-0 font-extrabold">{{
+                        money(line.lineTotal, line.currentCurrency)
+                      }}</bdi>
+                    }
+                  </div>
+
+                  @if (line.currentUnitPrice !== null) {
+                    <p class="mt-2 text-sm text-text-muted">
+                      {{ locale.translate('cart.unitPrice') }}:
+                      <bdi class="font-bold text-text">{{
+                        money(line.currentUnitPrice, line.currentCurrency)
+                      }}</bdi>
+                    </p>
+                  }
+                  @if (line.status === 'price-changed') {
+                    <p class="mt-2 rounded-md bg-brand-soft p-2 text-sm font-bold text-warning" role="status">
+                      {{ locale.translate('cart.priceChanged') }}
+                      <bdi class="line-through">{{
+                        money(line.snapshot.unitPrice, line.snapshot.currency)
+                      }}</bdi>
+                    </p>
+                  } @else if (line.status !== 'valid') {
+                    <p
+                      class="mt-2 rounded-md bg-surface-muted p-2 text-sm font-bold"
+                      [class.text-warning]="line.status === 'temporarily-unavailable'"
+                      [class.text-danger]="
+                        line.status === 'out-of-stock' ||
+                        line.status === 'removed' ||
+                        line.status === 'invalid'
+                      "
+                      role="status"
+                    >
+                      {{ statusLabel(line.status) }}
+                    </p>
+                  }
+
+                  <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+                    <div
+                      class="grid h-11 grid-cols-[44px_2.5rem_44px] overflow-hidden rounded-md border border-border"
+                    >
+                      <button
+                        type="button"
+                        class="grid h-11 w-11 place-items-center hover:bg-surface-muted disabled:opacity-40"
+                        [disabled]="line.quantity <= 1 || cart.updatingIds().has(line.productId)"
+                        [attr.aria-label]="locale.interpolate('cart.decrease', { name: line.productName })"
+                        (click)="decrement(line)"
+                      >
+                        <fa-icon [icon]="icons.minus" aria-hidden="true" />
+                      </button>
+                      <output
+                        class="grid place-items-center font-extrabold"
+                        [attr.aria-label]="locale.interpolate('cart.quantityFor', { name: line.productName })"
+                        >{{ line.quantity }}</output
+                      >
+                      <button
+                        type="button"
+                        class="grid h-11 w-11 place-items-center hover:bg-surface-muted disabled:opacity-40"
+                        [disabled]="
+                          line.quantity >= line.maximumQuantity ||
+                          cart.updatingIds().has(line.productId) ||
+                          !line.purchasable
+                        "
+                        [attr.aria-label]="locale.interpolate('cart.increase', { name: line.productName })"
+                        (click)="increment(line)"
+                      >
+                        <fa-icon [icon]="icons.plus" aria-hidden="true" />
+                      </button>
+                    </div>
+                    <button
+                      data-cart-remove
+                      type="button"
+                      class="inline-flex min-h-11 items-center gap-2 rounded-md px-3 text-sm font-bold text-danger hover:bg-red-50"
+                      [disabled]="cart.updatingIds().has(line.productId)"
+                      [attr.aria-label]="locale.interpolate('cart.remove', { name: line.productName })"
+                      (click)="remove(line, index)"
+                    >
+                      <fa-icon [icon]="icons.remove" aria-hidden="true" />{{
+                        locale.translate('cart.removeAction')
+                      }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </article>
+          }
+        </section>
+
+        <aside
+          class="h-fit rounded-xl border border-border bg-surface p-5 shadow-sm lg:sticky lg:top-5"
+          [attr.aria-label]="locale.translate('cart.summary')"
+        >
+          <h2 class="text-xl font-extrabold">{{ locale.translate('cart.summary') }}</h2>
+          <div class="mt-5 flex items-center justify-between gap-3">
+            <span>{{ locale.translate('cart.subtotal') }}</span>
+            @if (cart.subtotal(); as subtotal) {
+              <bdi class="font-extrabold">{{ money(subtotal.amount, subtotal.currency) }}</bdi>
+            } @else {
+              <span class="text-sm font-bold text-warning">{{
+                locale.translate('cart.subtotalUnavailable')
+              }}</span>
+            }
+          </div>
+          <div class="mt-4 border-t border-border pt-4">
+            <p class="text-sm font-bold">{{ locale.translate('cart.shipping') }}</p>
+            <p class="mt-1 text-sm leading-6 text-text-muted">
+              {{ locale.translate('cart.shippingExplanation') }}
+            </p>
+          </div>
+          @if (shippingProgress(); as progress) {
+            <div class="mt-4 rounded-md bg-brand-soft p-3">
+              <p class="text-sm font-bold">
+                {{
+                  progress.remaining > 0
+                    ? locale.interpolate('cart.freeShippingRemaining', {
+                        amount: money(progress.remaining, progress.currency)
+                      })
+                    : locale.translate('cart.freeShippingReached')
+                }}
+              </p>
+              <div
+                class="mt-2 h-2 overflow-hidden rounded-full bg-surface"
+                role="progressbar"
+                [attr.aria-valuenow]="progress.percent"
+                aria-valuemin="0"
+                aria-valuemax="100"
+              >
+                <span class="block h-full rounded-full bg-brand" [style.width.%]="progress.percent"></span>
+              </div>
+            </div>
+          }
+          <p id="checkout-phase-note" class="mt-5 text-sm leading-6 text-text-muted">
+            {{ locale.translate('cart.checkoutUnavailable') }}
+          </p>
+          <button
+            type="button"
+            class="mt-3 min-h-11 w-full rounded-md bg-surface-muted px-4 font-extrabold text-text-muted"
+            disabled
+            aria-describedby="checkout-phase-note"
+          >
+            {{ locale.translate('cart.checkout') }}
+          </button>
+          <a
+            class="mt-3 flex min-h-11 items-center justify-center rounded-md border border-border font-extrabold hover:bg-surface-muted"
+            [routerLink]="['/', locale.locale()]"
+            >{{ locale.translate('cart.continueShopping') }}</a
+          >
+        </aside>
+      </div>
+    }
+  </div>
+  <p class="sr-only" aria-live="polite" aria-atomic="true">{{ cart.store.announcement() }}</p>
+</main>

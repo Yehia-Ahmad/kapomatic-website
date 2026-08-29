@@ -1,0 +1,93 @@
+<article
+  class="group flex h-full min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-sm transition hover:-translate-y-1 hover:border-brand hover:shadow-md"
+>
+  <a
+    class="relative grid aspect-square place-items-center overflow-hidden bg-canvas p-3"
+    [routerLink]="['/', locale.locale(), 'products', product.slug]"
+    [attr.aria-label]="product.name"
+  >
+    @if (product.images[0] && !imageFailed()) {
+      <img
+        class="h-full w-full object-contain transition duration-300 group-hover:scale-105"
+        [src]="product.images[0].url"
+        [alt]="product.images[0].alt || product.name"
+        width="280"
+        height="280"
+        loading="lazy"
+        decoding="async"
+        (error)="imageFailed.set(true)"
+      />
+    } @else {
+      <fa-icon
+        class="text-4xl text-text-muted"
+        [icon]="icons.image"
+        [attr.aria-label]="locale.translate('home.noImage')"
+      />
+    }
+    @if (product.price?.hasDiscount) {
+      <span
+        class="absolute start-2 top-2 rounded-full bg-danger px-2 py-1 text-[11px] font-extrabold text-white"
+        >-{{ product.price?.discountPercentage }}%</span
+      >
+    }
+  </a>
+
+  <div class="flex flex-1 flex-col p-3 sm:p-4">
+    @if (product.code) {
+      <p class="truncate text-[11px] font-semibold uppercase tracking-wide text-text-muted" dir="ltr">
+        {{ product.code }}
+      </p>
+    }
+    <a
+      class="mt-1 line-clamp-2 min-h-12 break-words text-sm font-extrabold leading-6 text-text hover:text-brand-active"
+      [routerLink]="['/', locale.locale(), 'products', product.slug]"
+      >{{ product.name }}</a
+    >
+    @if (product.shortDescription) {
+      <p class="mt-1 line-clamp-2 text-xs leading-5 text-text-muted">{{ product.shortDescription }}</p>
+    }
+
+    <div class="mt-auto min-h-16 pt-3">
+      @if (product.price; as price) {
+        <div class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+          <bdi class="text-base font-extrabold text-text">{{ money(price.effective) }}</bdi>
+          @if (price.hasDiscount) {
+            <bdi class="text-xs text-text-muted line-through">{{ money(price.original) }}</bdi>
+          }
+        </div>
+      } @else {
+        <span class="text-sm font-semibold text-text-muted">{{
+          locale.translate('product.priceUnavailable')
+        }}</span>
+      }
+      <p
+        class="mt-1 text-xs font-semibold"
+        [class.text-success]="product.availability === 'in-stock'"
+        [class.text-danger]="product.availability === 'out-of-stock'"
+        [class.text-warning]="product.availability === 'unknown'"
+      >
+        @if (product.availability === 'in-stock') {
+          <span>{{ locale.translate('product.inStock') }}</span>
+        } @else if (product.availability === 'out-of-stock') {
+          <span>{{ locale.translate('product.outOfStock') }}</span>
+        } @else {
+          <span>{{ locale.translate('product.stockUnknown') }}</span>
+        }
+      </p>
+    </div>
+
+    <button
+      type="button"
+      class="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-brand px-2 text-xs font-extrabold text-brand-foreground transition hover:bg-brand-hover active:bg-brand-active disabled:cursor-not-allowed disabled:bg-surface-muted disabled:text-text-muted sm:text-sm"
+      [disabled]="!canAdd()"
+      (click)="addToCart()"
+    >
+      <fa-icon [icon]="icons.cart" aria-hidden="true" />
+      <span>{{
+        product.availability === 'out-of-stock'
+          ? locale.translate('product.outOfStock')
+          : locale.translate('product.addToCart')
+      }}</span>
+    </button>
+  </div>
+</article>

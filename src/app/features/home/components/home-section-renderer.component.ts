@@ -6,7 +6,7 @@ import { LocaleService } from '../../../core/i18n/locale.service';
 import { localizedInternalUrl } from '../../../core/security/public-url.utils';
 import { HomeBundle, HomeSection } from '../../../domains/home/home.models';
 import { StorefrontSettingsStore } from '../../../domains/settings/storefront-settings.store';
-import { HomeCategoryCardComponent } from './home-category-card.component';
+import { HomeCategoriesSectionComponent } from './home-categories-section.component';
 import { HomeOfferCarouselComponent } from './home-offer-carousel.component';
 import { HomeProductCardComponent } from './home-product-card.component';
 
@@ -16,7 +16,7 @@ import { HomeProductCardComponent } from './home-product-card.component';
   imports: [
     FaIconComponent,
     RouterLink,
-    HomeCategoryCardComponent,
+    HomeCategoriesSectionComponent,
     HomeOfferCarouselComponent,
     HomeProductCardComponent
   ],

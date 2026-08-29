@@ -51,6 +51,8 @@ describe('HomeRepository', () => {
       categories: []
     });
     http.expectOne('/api/ecommerce-settings/categories/active').flush([]);
+    http.expectOne('/api/public/seo/sitemap/categories?limit=100').flush({ data: [] });
+    http.expectOne('/api/public/seo/sitemap/products?limit=100').flush({ data: [] });
     http.expectOne('/api/website-images/active-with-products').flush([]);
 
     const content = await promise;

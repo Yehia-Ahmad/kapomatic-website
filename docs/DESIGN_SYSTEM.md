@@ -34,15 +34,15 @@ The authoritative design brief is `.superdesign/design-system.md`. This file des
 
 The implemented shell and Home use approved draft `3d6cca6e-3a4b-405d-b2c7-8371074061cc`, version 3, as visual direction. The draft was direct-authored/imported after Superdesign credits blocked model generation; the user accepted that provenance. Production Angular templates do not contain draft preview controls, preview scripts, CDN dependencies, placeholder links, or draft sample data.
 
-| Pattern   | Implementation rule                                                                                                                                    |
-| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Logo      | Stable 44/56 px-high container; backend image uses `object-contain`, max 112/180 px, no crop/stretch; absent logo is a neutral empty surface           |
-| Header    | Four-column 320px mobile grid plus full-width search row; desktop logo/search/actions row and dynamic navigation                                       |
-| Promotion | Image-dominant 16:10 mobile, 16:7 tablet, 16:5 desktop container; cover image, optional backend overlay, controls/indicators and no blank fixed height |
-| Category  | Two-column mobile, configured tablet/desktop columns, image-first card, line-safe localized title                                                      |
-| Product   | Two-column 320px grid, configured larger grids, square contained image, normalized price/discount/stock and one add action                             |
-| States    | Geometry-matched category/product skeletons; neutral empty panel; warning partial state; recoverable error with retry                                  |
-| Drawer    | Logical inline-end modal, 88vw/22rem max, inert background, scroll lock, focus trap and reduced motion                                                 |
+| Pattern   | Implementation rule                                                                                                                                                                                       |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Logo      | Stable 44/56 px-high container; backend image uses `object-contain`, max 112/180 px, no crop/stretch; absent logo is a neutral empty surface                                                              |
+| Header    | Four-column 320px mobile grid plus full-width search row; desktop logo/search/actions row and dynamic navigation                                                                                          |
+| Promotion | Image-dominant 16:10 mobile, 16:7 tablet, 16:5 desktop container; cover image, optional backend overlay, controls/indicators and no blank fixed height                                                    |
+| Category  | Two-column mobile, configured tablet/desktop columns, stable contained API image, line-safe localized title, authoritative Product count; configured image shape/radius and name visibility remain active |
+| Product   | Two-column 320px grid, configured larger grids, square contained image, normalized price/discount/stock and one add action                                                                                |
+| States    | Geometry-matched category/product skeletons; neutral empty panel; warning partial state; recoverable error with retry                                                                                     |
+| Drawer    | Logical inline-end modal, 88vw/22rem max, inert background, scroll lock, focus trap and reduced motion                                                                                                    |
 
 Responsive breakpoints remain 640, 768, 1024, 1280 and 1536 px. Exact device emulation verifies no document overflow at 320px in Arabic or English. Full Home screenshots are under `docs/screenshots/` and are explicitly fixture-driven.
 

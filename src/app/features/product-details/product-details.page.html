@@ -1,0 +1,313 @@
+<main id="main-content" class="min-h-[60vh] bg-canvas" tabindex="-1">
+  <div class="mx-auto max-w-content px-4 py-6 sm:px-6 lg:px-8">
+    @if (status() === 'loading') {
+      <div class="animate-pulse" aria-hidden="true">
+        <div class="h-4 w-48 rounded-full bg-surface-muted"></div>
+        <div class="mt-8 grid gap-8 lg:grid-cols-2">
+          <div class="aspect-square rounded-xl bg-surface-muted"></div>
+          <div>
+            <div class="h-9 w-4/5 rounded-lg bg-surface-muted"></div>
+            <div class="mt-4 h-5 w-2/3 rounded-full bg-surface-muted"></div>
+            <div class="mt-10 h-10 w-40 rounded-lg bg-surface-muted"></div>
+            <div class="mt-5 h-12 w-full rounded-lg bg-surface-muted"></div>
+          </div>
+        </div>
+      </div>
+      <p class="sr-only" role="status">{{ locale.translate('product.detailsLoading') }}</p>
+    } @else if (status() === 'missing') {
+      <section class="mx-auto max-w-xl py-20 text-center">
+        <fa-icon class="text-5xl text-text-muted" [icon]="icons.image" aria-hidden="true" />
+        <h1 class="mt-5 text-3xl font-extrabold">{{ locale.translate('product.notFoundTitle') }}</h1>
+        <p class="mt-3 text-text-muted">{{ locale.translate('product.notFoundDescription') }}</p>
+        <a
+          class="mt-6 inline-flex min-h-11 items-center rounded-md bg-brand px-5 font-extrabold text-brand-foreground"
+          [routerLink]="['/', locale.locale()]"
+        >
+          {{ locale.translate('product.backHome') }}
+        </a>
+      </section>
+    } @else if (status() === 'error' || status() === 'malformed') {
+      <section class="mx-auto max-w-xl py-20 text-center">
+        <fa-icon class="text-5xl text-danger" [icon]="icons.error" aria-hidden="true" />
+        <h1 class="mt-5 text-3xl font-extrabold">{{ locale.translate('product.detailsErrorTitle') }}</h1>
+        <p class="mt-3 text-text-muted">
+          {{
+            status() === 'malformed'
+              ? locale.translate('product.detailsMalformedDescription')
+              : locale.translate('product.detailsErrorDescription')
+          }}
+        </p>
+        <button
+          type="button"
+          class="mt-6 min-h-11 rounded-md bg-brand px-5 font-extrabold text-brand-foreground"
+          (click)="retry()"
+        >
+          {{ locale.translate('product.retry') }}
+        </button>
+      </section>
+    } @else {
+      @if (product(); as productValue) {
+        <nav [attr.aria-label]="locale.translate('product.breadcrumb')" class="mb-6 text-sm text-text-muted">
+          <ol class="flex flex-wrap items-center gap-2">
+            <li>
+              <a class="hover:text-text" [routerLink]="['/', locale.locale()]">{{
+                locale.translate('nav.home')
+              }}</a>
+            </li>
+            @if (productValue.category; as category) {
+              <li aria-hidden="true">/</li>
+              <li>
+                <a
+                  class="hover:text-text"
+                  [routerLink]="['/', locale.locale(), 'categories', category.slug]"
+                  >{{ category.name }}</a
+                >
+              </li>
+            }
+            <li aria-hidden="true">/</li>
+            <li class="max-w-full truncate font-bold text-text" aria-current="page">
+              {{ productValue.name }}
+            </li>
+          </ol>
+        </nav>
+
+        <article class="product-detail-layout">
+          <header class="product-identity min-w-0">
+            @if (productValue.code) {
+              <p class="text-xs font-bold uppercase tracking-wide text-text-muted" dir="ltr">
+                {{ locale.translate('product.code') }}: <bdi>{{ productValue.code }}</bdi>
+              </p>
+            }
+            <h1 class="mt-2 break-words text-3xl font-extrabold leading-tight text-text md:text-4xl">
+              {{ productValue.name }}
+            </h1>
+            @if (productValue.brand || productValue.shortDescription) {
+              <p class="mt-3 break-words leading-7 text-text-muted">
+                {{ productValue.brand || productValue.shortDescription }}
+              </p>
+            }
+            @if (productValue.rating !== null && productValue.reviewCount !== null) {
+              <p class="mt-3 flex items-center gap-2 text-sm font-bold">
+                <fa-icon class="text-brand-active" [icon]="icons.star" aria-hidden="true" />
+                <bdi>{{ productValue.rating }}</bdi>
+                <span class="text-text-muted">{{
+                  locale.interpolate('product.reviewCount', { count: productValue.reviewCount })
+                }}</span>
+              </p>
+            }
+          </header>
+
+          <section class="product-gallery min-w-0" [attr.aria-label]="locale.translate('product.gallery')">
+            <div
+              class="grid aspect-square max-h-[38rem] place-items-center overflow-hidden rounded-xl border border-border bg-surface p-4 shadow-sm"
+            >
+              @if (currentImage(); as image) {
+                @if (!failedImages().has(image.id)) {
+                  <img
+                    class="h-full w-full object-contain"
+                    [src]="image.url"
+                    [alt]="image.alt"
+                    width="640"
+                    height="640"
+                    fetchpriority="high"
+                    decoding="async"
+                    (error)="imageFailed(image.id)"
+                  />
+                } @else {
+                  <div class="text-center text-text-muted">
+                    <fa-icon class="text-5xl" [icon]="icons.image" aria-hidden="true" />
+                    <p class="mt-3 text-sm font-bold">{{ locale.translate('home.noImage') }}</p>
+                  </div>
+                }
+              } @else {
+                <div class="text-center text-text-muted">
+                  <fa-icon class="text-5xl" [icon]="icons.image" aria-hidden="true" />
+                  <p class="mt-3 text-sm font-bold">{{ locale.translate('home.noImage') }}</p>
+                </div>
+              }
+            </div>
+            @if (productValue.images.length > 1) {
+              <div
+                class="mt-3 flex max-w-full gap-3 overflow-x-auto pb-2"
+                role="list"
+                [attr.aria-label]="locale.translate('product.thumbnails')"
+              >
+                @for (image of productValue.images; track image.id; let index = $index) {
+                  <button
+                    type="button"
+                    role="listitem"
+                    class="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-md border bg-surface p-1"
+                    [class.border-brand]="currentImageId() === image.id"
+                    [class.border-border]="currentImageId() !== image.id"
+                    [attr.aria-pressed]="currentImageId() === image.id"
+                    [attr.aria-label]="locale.interpolate('product.selectImage', { count: index + 1 })"
+                    (click)="selectImage(image.id)"
+                    (keydown.ArrowLeft)="moveImage(index, -1); $event.preventDefault()"
+                    (keydown.ArrowRight)="moveImage(index, 1); $event.preventDefault()"
+                  >
+                    @if (!failedImages().has(image.id)) {
+                      <img
+                        class="h-full w-full object-contain"
+                        [src]="image.url"
+                        [alt]="image.alt"
+                        width="72"
+                        height="72"
+                        loading="lazy"
+                        (error)="imageFailed(image.id)"
+                      />
+                    } @else {
+                      <fa-icon class="text-text-muted" [icon]="icons.image" aria-hidden="true" />
+                    }
+                  </button>
+                }
+              </div>
+            }
+          </section>
+
+          <section
+            class="product-purchase min-w-0 rounded-xl border border-border bg-surface p-5 shadow-sm sm:p-6"
+            [attr.aria-label]="locale.translate('product.purchase')"
+          >
+            @if (productValue.price; as price) {
+              <div class="flex flex-wrap items-baseline gap-x-3 gap-y-2">
+                <bdi class="text-2xl font-extrabold text-text sm:text-3xl">{{ money(price.effective) }}</bdi>
+                @if (price.hasDiscount) {
+                  <bdi class="text-sm font-semibold text-text-muted line-through">{{
+                    money(price.original)
+                  }}</bdi>
+                  <span class="rounded-full bg-danger px-2 py-1 text-xs font-extrabold text-white"
+                    >-{{ price.discountPercentage }}%</span
+                  >
+                }
+              </div>
+            } @else {
+              <p class="text-lg font-extrabold text-danger">
+                {{ locale.translate('product.priceUnavailable') }}
+              </p>
+            }
+
+            <p
+              class="mt-4 flex items-center gap-2 rounded-md bg-surface-muted px-3 py-3 text-sm font-extrabold"
+              [class.text-success]="productValue.availability === 'in-stock'"
+              [class.text-danger]="productValue.availability === 'out-of-stock'"
+              [class.text-warning]="productValue.availability === 'unknown'"
+            >
+              <fa-icon
+                [icon]="productValue.availability === 'in-stock' ? icons.check : icons.error"
+                aria-hidden="true"
+              />
+              <span>{{
+                productValue.availability === 'in-stock'
+                  ? locale.translate('product.inStock')
+                  : productValue.availability === 'out-of-stock'
+                    ? locale.translate('product.outOfStock')
+                    : locale.translate('product.stockUnknown')
+              }}</span>
+            </p>
+
+            <div class="mt-6 grid gap-3 sm:grid-cols-[9.5rem_minmax(0,1fr)]">
+              <div>
+                <span class="mb-2 block text-sm font-bold">{{ locale.translate('product.quantity') }}</span>
+                <div
+                  class="grid h-11 grid-cols-[44px_1fr_44px] overflow-hidden rounded-md border border-border"
+                >
+                  <button
+                    type="button"
+                    class="grid h-11 w-11 place-items-center hover:bg-surface-muted disabled:opacity-40"
+                    [disabled]="quantity() <= 1"
+                    [attr.aria-label]="locale.translate('product.decreaseQuantity')"
+                    (click)="decrement()"
+                  >
+                    <fa-icon [icon]="icons.minus" aria-hidden="true" />
+                  </button>
+                  <output
+                    class="grid place-items-center font-extrabold"
+                    [attr.aria-label]="locale.translate('product.quantity')"
+                    >{{ quantity() }}</output
+                  >
+                  <button
+                    type="button"
+                    class="grid h-11 w-11 place-items-center hover:bg-surface-muted disabled:opacity-40"
+                    [disabled]="quantity() >= maximumQuantity()"
+                    [attr.aria-label]="locale.translate('product.increaseQuantity')"
+                    (click)="increment()"
+                  >
+                    <fa-icon [icon]="icons.plus" aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
+              <button
+                type="button"
+                class="mt-auto inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-brand px-4 font-extrabold text-brand-foreground hover:bg-brand-hover disabled:cursor-not-allowed disabled:bg-surface-muted disabled:text-text-muted"
+                [disabled]="!canPurchase() || addStatus() === 'pending'"
+                (click)="addToCart()"
+              >
+                <fa-icon [icon]="addStatus() === 'success' ? icons.check : icons.add" aria-hidden="true" />
+                <span>{{
+                  addStatus() === 'pending'
+                    ? locale.translate('product.addPending')
+                    : addStatus() === 'success'
+                      ? locale.translate('product.addSuccess')
+                      : locale.translate('product.addToCart')
+                }}</span>
+              </button>
+            </div>
+            @if (addStatus() === 'failure' || addStatus() === 'maximum') {
+              <p
+                class="mt-3 text-sm font-bold"
+                [class.text-danger]="addStatus() === 'failure'"
+                [class.text-warning]="addStatus() === 'maximum'"
+                role="status"
+              >
+                {{
+                  addStatus() === 'maximum'
+                    ? locale.translate('product.maximumQuantity')
+                    : locale.translate('product.addFailed')
+                }}
+              </p>
+            }
+          </section>
+        </article>
+
+        @if (productValue.description || productValue.specifications.length > 0) {
+          <div class="mt-10 grid gap-6 lg:grid-cols-2">
+            @if (productValue.description) {
+              <section
+                class="rounded-xl border border-border bg-surface p-5 shadow-sm sm:p-6"
+                aria-labelledby="product-description-title"
+              >
+                <h2 id="product-description-title" class="text-xl font-extrabold">
+                  {{ locale.translate('product.description') }}
+                </h2>
+                <p class="mt-4 whitespace-pre-line break-words leading-8 text-text-muted">
+                  {{ productValue.description }}
+                </p>
+              </section>
+            }
+            @if (productValue.specifications.length > 0) {
+              <section
+                class="rounded-xl border border-border bg-surface p-5 shadow-sm sm:p-6"
+                aria-labelledby="product-specifications-title"
+              >
+                <h2 id="product-specifications-title" class="text-xl font-extrabold">
+                  {{ locale.translate('product.specifications') }}
+                </h2>
+                <dl class="mt-4 divide-y divide-border">
+                  @for (specification of productValue.specifications; track specification.id) {
+                    <div
+                      class="grid min-w-0 gap-1 py-3 sm:grid-cols-[minmax(8rem,0.8fr)_minmax(0,1.2fr)] sm:gap-4"
+                    >
+                      <dt class="font-bold text-text-muted">{{ specification.name }}</dt>
+                      <dd class="min-w-0 break-words font-semibold text-text">{{ specification.value }}</dd>
+                    </div>
+                  }
+                </dl>
+              </section>
+            }
+          </div>
+        }
+      }
+    }
+  </div>
+  <p class="sr-only" aria-live="polite" aria-atomic="true">{{ cart.announcement() }}</p>
+</main>

@@ -18,6 +18,9 @@ describe('Home response normalizer', () => {
               title: { ar: 'الأقسام', en: 'Categories' },
               settings: {
                 columns: { desktop: 6, tablet: 4, mobile: 2 },
+                imageShape: 'circle',
+                imageBorderRadius: 24,
+                showCategoryName: false,
                 categories: [
                   {
                     id: 'category-1',
@@ -58,6 +61,9 @@ describe('Home response normalizer', () => {
     if (categorySection?.type === 'categories') {
       expect(categorySection.categories[0]?.name).toBe('Oils');
       expect(categorySection.settings.columns.mobile).toBe(2);
+      expect(categorySection.settings.imageShape).toBe('circle');
+      expect(categorySection.settings.imageBorderRadius).toBe(24);
+      expect(categorySection.settings.showCategoryName).toBeFalse();
     }
     const productSection = result.content.sections[1];
     if (productSection?.type === 'products') {
@@ -120,6 +126,42 @@ describe('Home response normalizer', () => {
     if (products?.type === 'products') {
       expect(products.products.map((item) => item.id)).toEqual(['selected-product']);
     }
+  });
+
+  it('merges localized active category data and authoritative public product slugs into Home cards', () => {
+    const sections = normalizeLegacyCategories(
+      {
+        categoryIds: ['category-1'],
+        categories: [{ _id: 'category-1', name: 'فلاتر', image: '/api/category-1' }]
+      },
+      [
+        {
+          category: {
+            _id: 'category-1',
+            name: 'فلاتر',
+            translations: {
+              ar: { name: 'فلاتر', slug: 'فلاتر-فتيس' },
+              en: { name: 'Filters', slug: 'transmission-filters' }
+            }
+          },
+          setting: { selectedProducts: ['product-1'] },
+          products: [{ _id: 'product-1', name: 'فلتر', retailPrice: 10, inventoryCount: 1 }]
+        }
+      ],
+      'en',
+      undefined,
+      { products: { 'product-1': 'transmission-filter' } }
+    );
+
+    const categories = sections[0];
+    const products = sections[1];
+    expect(categories?.type === 'categories' ? categories.categories[0]?.slug : '').toBe(
+      'transmission-filters'
+    );
+    expect(products?.type === 'products' ? products.settings.viewAllUrl : '').toBe(
+      '/en/categories/transmission-filters'
+    );
+    expect(products?.type === 'products' ? products.products[0]?.slug : '').toBe('transmission-filter');
   });
 
   it('omits legacy promotions without a safe backend image', () => {

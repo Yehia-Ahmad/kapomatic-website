@@ -71,5 +71,5 @@ function normalizeBaseHref(value: string | undefined): string {
 }
 
 function normalizeTimeout(value: number | undefined): number {
-  return Number.isFinite(value) ? Math.min(30_000, Math.max(1_000, Math.trunc(value!))) : 10_000;
+  return Number.isFinite(value) ? Math.min(30_000, Math.max(1_000, Math.trunc(value!))) : 80_000;
 }

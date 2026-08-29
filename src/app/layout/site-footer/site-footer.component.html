@@ -105,7 +105,7 @@
         }
         <a
           class="flex min-h-11 items-center gap-3 hover:text-text"
-          [routerLink]="['/', locale.locale(), 'locations']"
+          [routerLink]="['/', locale.locale(), 'branches']"
         >
           <fa-icon [icon]="icons.location" aria-hidden="true" />
           <span>{{ locale.translate('footer.locations') }}</span>
@@ -116,7 +116,7 @@
           [attr.aria-label]="locale.translate('header.languageLabel')"
           (click)="switchLocale()"
         >
-          <fa-icon [icon]="icons.globe" aria-hidden="true" />
+          <fa-icon [icon]="icons.language" aria-hidden="true" />
           <span>{{ locale.translate('footer.language') }}</span>
         </button>
       </div>

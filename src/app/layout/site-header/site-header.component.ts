@@ -14,8 +14,8 @@ import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import {
   faBars,
-  faCartShopping,
-  faGlobe,
+  faBagShopping,
+  faLanguage,
   faMagnifyingGlass,
   faPhone,
   faChevronDown
@@ -44,14 +44,17 @@ export class SiteHeaderComponent {
   @Input() logoUrl = '';
   @Input() mobileLogoUrl = '';
   @Input() whatsappHref = '';
+  @Input() cartDrawerOpen = false;
   @Output() readonly menuRequested = new EventEmitter<void>();
+  @Output() readonly cartRequested = new EventEmitter<void>();
   @ViewChild('menuButton') private menuButton?: ElementRef<HTMLButtonElement>;
+  @ViewChild('cartButton') private cartButton?: ElementRef<HTMLButtonElement>;
 
   protected searchQuery = '';
   protected readonly icons = {
     bars: faBars,
-    cart: faCartShopping,
-    globe: faGlobe,
+    cart: faBagShopping,
+    language: faLanguage,
     search: faMagnifyingGlass,
     whatsapp: faWhatsapp,
     phone: faPhone,
@@ -79,5 +82,9 @@ export class SiteHeaderComponent {
 
   focusMenuButton(): void {
     this.menuButton?.nativeElement.focus();
+  }
+
+  focusCartButton(): void {
+    this.cartButton?.nativeElement.focus();
   }
 }

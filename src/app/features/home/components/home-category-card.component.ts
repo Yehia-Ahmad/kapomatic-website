@@ -1,5 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, Input, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { faBoxesStacked, faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
@@ -11,10 +11,11 @@ import { HomeCategory } from '../../../domains/home/home.models';
   standalone: true,
   imports: [FaIconComponent, RouterLink, NgTemplateOutlet],
   template: `
-    @if (category.slug) {
+    @if (category.activeSlug) {
       <a
-        class="group block h-full rounded-lg border border-border bg-surface p-3 shadow-sm transition hover:-translate-y-1 hover:border-brand hover:shadow-md"
-        [routerLink]="['/', locale.locale(), 'categories', category.slug]"
+        class="group block h-full min-h-11 rounded-lg border border-border bg-surface p-3 shadow-sm transition hover:-translate-y-1 hover:border-brand hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+        [routerLink]="['/', locale.locale(), 'categories', category.activeSlug]"
+        [attr.aria-label]="locale.interpolate('home.openCategory', { name: category.name })"
       >
         <ng-container *ngTemplateOutlet="content" />
       </a>
@@ -24,8 +25,13 @@ import { HomeCategory } from '../../../domains/home/home.models';
       </article>
     }
     <ng-template #content>
-      <div class="grid aspect-square place-items-center overflow-hidden rounded-lg bg-canvas">
-        @if (category.imageUrl) {
+      <div
+        class="grid aspect-square place-items-center overflow-hidden bg-canvas"
+        [class.rounded-full]="imageShape === 'circle'"
+        [class.rounded-none]="imageShape === 'square'"
+        [style.border-radius.px]="imageShape === 'rounded' ? imageBorderRadius : null"
+      >
+        @if (category.imageUrl && !imageFailed()) {
           <img
             class="h-full w-full object-contain p-2 transition duration-300 group-hover:scale-105"
             [src]="category.imageUrl"
@@ -34,6 +40,7 @@ import { HomeCategory } from '../../../domains/home/home.models';
             height="220"
             loading="lazy"
             decoding="async"
+            (error)="imageFailed.set(true)"
           />
         } @else {
           <fa-icon
@@ -44,8 +51,15 @@ import { HomeCategory } from '../../../domains/home/home.models';
         }
       </div>
       <div class="mt-3 flex min-h-11 items-center justify-between gap-2">
-        <h3 class="line-clamp-2 text-sm font-extrabold leading-6 text-text">{{ category.name }}</h3>
-        @if (category.slug) {
+        <div class="min-w-0">
+          @if (showCategoryName) {
+            <h3 class="line-clamp-2 break-words text-sm font-extrabold leading-6 text-text">
+              {{ category.name }}
+            </h3>
+          }
+          <bdi class="mt-0.5 block text-xs font-bold text-text-muted">{{ productsCountLabel() }}</bdi>
+        </div>
+        @if (category.activeSlug) {
           <fa-icon
             class="shrink-0 text-xs text-text-muted group-hover:text-brand-active"
             [icon]="locale.direction() === 'rtl' ? leftIcon : rightIcon"
@@ -60,7 +74,18 @@ import { HomeCategory } from '../../../domains/home/home.models';
 export class HomeCategoryCardComponent {
   protected readonly locale = inject(LocaleService);
   @Input({ required: true }) category!: HomeCategory;
+  @Input() imageShape: 'circle' | 'square' | 'rounded' = 'rounded';
+  @Input() imageBorderRadius = 14;
+  @Input() showCategoryName = true;
+  protected readonly imageFailed = signal(false);
   protected readonly categoryIcon = faBoxesStacked;
   protected readonly leftIcon = faChevronLeft;
   protected readonly rightIcon = faChevronRight;
+
+  protected productsCountLabel(): string {
+    return this.locale.interpolate(
+      this.category.productsCount === 1 ? 'home.categoryProductCountOne' : 'home.categoryProductCountMany',
+      { count: this.category.productsCount }
+    );
+  }
 }

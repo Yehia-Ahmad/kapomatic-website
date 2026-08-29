@@ -5,6 +5,7 @@ import { NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs';
 import { SupportedLocale } from '../http/api-endpoints';
 import { TRANSLATIONS, TranslationKey } from './translations';
+import { AlternateSlugs } from '../../domains/catalog/catalog.models';
 
 export type TextDirection = 'rtl' | 'ltr';
 
@@ -14,6 +15,7 @@ export class LocaleService {
   private readonly document = inject(DOCUMENT);
   private readonly destroyRef = inject(DestroyRef);
   private readonly localeSignal = signal<SupportedLocale>('ar');
+  private readonly alternateSlugsSignal = signal<AlternateSlugs | null>(null);
 
   readonly locale = this.localeSignal.asReadonly();
   readonly direction = computed<TextDirection>(() => (this.locale() === 'ar' ? 'rtl' : 'ltr'));
@@ -24,7 +26,10 @@ export class LocaleService {
         filter((event): event is NavigationEnd => event instanceof NavigationEnd),
         takeUntilDestroyed(this.destroyRef)
       )
-      .subscribe((event) => this.applyFromPath(event.urlAfterRedirects));
+      .subscribe((event) => {
+        this.alternateSlugsSignal.set(null);
+        this.applyFromPath(event.urlAfterRedirects);
+      });
   }
 
   initialize(): void {
@@ -59,14 +64,20 @@ export class LocaleService {
 
     if (current.length === 0) return this.router.navigate([target]);
     current[0] = target;
-    if (alternateSlug && current.length >= 3 && ['categories', 'products'].includes(current[1] ?? '')) {
-      current[2] = alternateSlug;
+    if (current.length >= 3 && ['categories', 'products'].includes(current[1] ?? '')) {
+      const resolvedAlternate = alternateSlug || this.alternateSlugsSignal()?.[target];
+      if (!resolvedAlternate) return this.router.navigate(['/', target]);
+      current[2] = resolvedAlternate;
     }
 
     return this.router.navigate(['/', ...current], {
       queryParams: tree.queryParams,
       fragment: tree.fragment ?? undefined
     });
+  }
+
+  setAlternateSlugs(slugs: AlternateSlugs): void {
+    this.alternateSlugsSignal.set({ ...slugs });
   }
 
   private applyFromPath(path: string): void {

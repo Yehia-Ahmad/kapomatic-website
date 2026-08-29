@@ -1,0 +1,186 @@
+<div class="fixed inset-0 z-[130]">
+  <button
+    type="button"
+    class="absolute inset-0 cursor-default bg-black/55"
+    [attr.aria-label]="locale.translate('cart.closeDrawer')"
+    (click)="closeRequested.emit()"
+  ></button>
+  <aside
+    #dialogPanel
+    class="absolute bottom-0 end-0 top-0 flex w-full flex-col bg-surface shadow-lg sm:w-[min(94vw,28.75rem)]"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="cart-drawer-title"
+  >
+    <div class="flex min-h-16 items-center justify-between gap-3 border-b border-border px-4">
+      <div class="min-w-0">
+        <h2 id="cart-drawer-title" class="text-lg font-extrabold">{{ locale.translate('cart.title') }}</h2>
+        <p class="text-xs text-text-muted">
+          {{ locale.interpolate('cart.itemCount', { count: cart.store.count() }) }}
+        </p>
+      </div>
+      <button
+        #closeButton
+        type="button"
+        class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md hover:bg-surface-muted"
+        [attr.aria-label]="locale.translate('cart.closeDrawer')"
+        (click)="closeRequested.emit()"
+      >
+        <fa-icon [icon]="icons.close" aria-hidden="true" />
+      </button>
+    </div>
+
+    <div class="min-h-0 flex-1 overflow-y-auto p-4">
+      @if (!cart.store.restored()) {
+        <div class="space-y-4" aria-hidden="true">
+          @for (item of [1, 2, 3]; track item) {
+            <div class="flex animate-pulse gap-3">
+              <div class="h-20 w-20 rounded-md bg-surface-muted"></div>
+              <div class="flex-1 space-y-2">
+                <div class="h-4 rounded bg-surface-muted"></div>
+                <div class="h-4 w-2/3 rounded bg-surface-muted"></div>
+              </div>
+            </div>
+          }
+        </div>
+        <p class="sr-only" role="status">{{ locale.translate('cart.restoring') }}</p>
+      } @else if (cart.lines().length === 0) {
+        <div class="grid min-h-full place-items-center py-16 text-center">
+          <div>
+            <fa-icon class="text-5xl text-text-muted" [icon]="icons.image" aria-hidden="true" />
+            <h3 class="mt-4 text-xl font-extrabold">{{ locale.translate('cart.emptyTitle') }}</h3>
+            <p class="mt-2 text-sm text-text-muted">{{ locale.translate('cart.emptyDescription') }}</p>
+          </div>
+        </div>
+      } @else {
+        @if (cart.revalidating()) {
+          <p class="mb-3 rounded-md bg-surface-muted p-3 text-sm text-text-muted" role="status">
+            {{ locale.translate('cart.revalidating') }}
+          </p>
+        }
+        <div class="space-y-4">
+          @for (line of cart.lines(); track line.productId) {
+            <article class="flex min-w-0 gap-3 border-b border-border pb-4">
+              @if (line.slug) {
+                <a
+                  class="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-md bg-canvas p-1"
+                  [routerLink]="['/', locale.locale(), 'products', line.slug]"
+                  [attr.aria-label]="line.productName"
+                  (click)="closeRequested.emit()"
+                >
+                  @if (imageAvailable(line)) {
+                    <img
+                      class="h-full w-full object-contain"
+                      [src]="line.imageUrl"
+                      alt=""
+                      width="80"
+                      height="80"
+                      (error)="imageFailed(line)"
+                    />
+                  } @else {
+                    <fa-icon class="text-text-muted" [icon]="icons.image" aria-hidden="true" />
+                  }
+                </a>
+              } @else {
+                <div class="grid h-20 w-20 shrink-0 place-items-center rounded-md bg-canvas">
+                  <fa-icon class="text-text-muted" [icon]="icons.image" aria-hidden="true" />
+                </div>
+              }
+              <div class="min-w-0 flex-1">
+                @if (line.slug) {
+                  <a
+                    class="line-clamp-2 break-words text-sm font-extrabold hover:text-brand-active"
+                    [routerLink]="['/', locale.locale(), 'products', line.slug]"
+                    (click)="closeRequested.emit()"
+                    >{{ line.productName }}</a
+                  >
+                } @else {
+                  <p class="line-clamp-2 text-sm font-extrabold">{{ line.productName }}</p>
+                }
+                @if (line.currentUnitPrice !== null) {
+                  <bdi class="mt-1 block text-sm font-extrabold">{{
+                    money(line.currentUnitPrice, line.currentCurrency)
+                  }}</bdi>
+                }
+                @if (line.status !== 'valid') {
+                  <p
+                    class="mt-1 text-xs font-bold"
+                    [class.text-warning]="
+                      line.status === 'price-changed' || line.status === 'temporarily-unavailable'
+                    "
+                    [class.text-danger]="
+                      line.status === 'out-of-stock' || line.status === 'removed' || line.status === 'invalid'
+                    "
+                  >
+                    {{ statusLabel(line.status) }}
+                  </p>
+                }
+                <div class="mt-2 flex flex-wrap items-center justify-between gap-2">
+                  <div
+                    class="grid h-11 grid-cols-[44px_2rem_44px] overflow-hidden rounded-md border border-border"
+                  >
+                    <button
+                      type="button"
+                      class="grid h-11 w-11 place-items-center"
+                      [disabled]="line.quantity <= 1 || cart.updatingIds().has(line.productId)"
+                      [attr.aria-label]="locale.interpolate('cart.decrease', { name: line.productName })"
+                      (click)="decrement(line)"
+                    >
+                      <fa-icon [icon]="icons.minus" aria-hidden="true" />
+                    </button>
+                    <span class="grid place-items-center text-sm font-extrabold">{{ line.quantity }}</span>
+                    <button
+                      type="button"
+                      class="grid h-11 w-11 place-items-center"
+                      [disabled]="
+                        line.quantity >= line.maximumQuantity ||
+                        cart.updatingIds().has(line.productId) ||
+                        !line.purchasable
+                      "
+                      [attr.aria-label]="locale.interpolate('cart.increase', { name: line.productName })"
+                      (click)="increment(line)"
+                    >
+                      <fa-icon [icon]="icons.plus" aria-hidden="true" />
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    class="inline-flex min-h-11 items-center gap-2 rounded-md px-2 text-sm font-bold text-danger"
+                    [attr.aria-label]="locale.interpolate('cart.remove', { name: line.productName })"
+                    (click)="remove(line)"
+                  >
+                    <fa-icon [icon]="icons.remove" aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
+            </article>
+          }
+        </div>
+      }
+    </div>
+
+    <div class="space-y-3 border-t border-border bg-surface p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+      @if (cart.subtotal(); as subtotal) {
+        <div class="flex items-center justify-between gap-3 text-lg font-extrabold">
+          <span>{{ locale.translate('cart.subtotal') }}</span>
+          <bdi>{{ money(subtotal.amount, subtotal.currency) }}</bdi>
+        </div>
+      }
+      <a
+        class="flex min-h-11 items-center justify-center rounded-md border border-border font-extrabold hover:bg-surface-muted"
+        [routerLink]="['/', locale.locale(), 'cart']"
+        (click)="closeRequested.emit()"
+        >{{ locale.translate('cart.viewCart') }}</a
+      >
+      <button
+        type="button"
+        class="min-h-11 w-full rounded-md bg-surface-muted px-4 font-extrabold text-text-muted"
+        disabled
+        [attr.aria-label]="locale.translate('cart.checkoutUnavailable')"
+      >
+        {{ locale.translate('cart.checkout') }}
+      </button>
+    </div>
+  </aside>
+  <p class="sr-only" aria-live="polite" aria-atomic="true">{{ cart.store.announcement() }}</p>
+</div>

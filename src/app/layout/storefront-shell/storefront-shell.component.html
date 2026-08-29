@@ -1,11 +1,13 @@
-<div [attr.inert]="drawerOpen() ? '' : null" [attr.aria-hidden]="drawerOpen() ? 'true' : null">
+<div [attr.inert]="overlayOpen() ? '' : null" [attr.aria-hidden]="overlayOpen() ? 'true' : null">
   <app-site-header
     [config]="header.config()"
     [navigation]="navigation()"
     [logoUrl]="logoUrl()"
     [mobileLogoUrl]="mobileLogoUrl()"
     [whatsappHref]="whatsappHref()"
-    (menuRequested)="drawerOpen.set(true)"
+    [cartDrawerOpen]="cartDrawerOpen()"
+    (menuRequested)="navDrawerOpen.set(true)"
+    (cartRequested)="openCartDrawer()"
   />
 
   <router-outlet />
@@ -32,10 +34,14 @@
   }
 </div>
 
-@if (drawerOpen()) {
+@if (navDrawerOpen()) {
   <app-mobile-nav-drawer
     [navigation]="navigation()"
     [whatsappHref]="whatsappHref()"
     (closeRequested)="closeDrawer()"
   />
+}
+
+@if (cartDrawerOpen()) {
+  <app-cart-drawer (closeRequested)="closeCartDrawer()" />
 }

@@ -7,10 +7,11 @@ import {
   APP_RUNTIME_CONFIG_OVERRIDE,
   normalizeRuntimeConfig
 } from './src/app/core/config/app-runtime-config';
+import { SSR_RESPONSE_STATE, SsrResponseState } from './src/app/core/ssr/ssr-response.service';
 import bootstrap from './src/main.server';
 
 const LOCALIZED_ROUTE =
-  /^\/(?:ar|en)(?:\/(?:categories\/[^/]+|search|products\/[^/]+|cart|checkout|locations|not-found))?\/?$/;
+  /^\/(?:ar|en)(?:\/(?:categories\/[^/]+|search|products\/[^/]+|cart|checkout|branches|locations|not-found))?\/?$/;
 const LEGACY_PRODUCT_ROUTE = /^\/products\/[^/]+\/?$/;
 
 export function app(): express.Express {
@@ -26,9 +27,8 @@ export function app(): express.Express {
   server.get('/', (request, response) => response.redirect(308, withQuery(request, '/ar')));
   server.get('/cart', (request, response) => response.redirect(308, withQuery(request, '/ar/cart')));
   server.get('/checkout', (request, response) => response.redirect(308, withQuery(request, '/ar/checkout')));
-  server.get('/locations', (request, response) =>
-    response.redirect(308, withQuery(request, '/ar/locations'))
-  );
+  server.get('/branches', (request, response) => response.redirect(308, withQuery(request, '/ar/branches')));
+  server.get('/locations', (request, response) => response.redirect(308, withQuery(request, '/ar/branches')));
   server.get('/products', (request, response) => response.redirect(308, withQuery(request, '/ar/search')));
 
   const apiBaseUrl = normalizeRuntimeConfig({
@@ -55,9 +55,12 @@ export function app(): express.Express {
       apiBaseUrl: process.env['API_BASE_URL'] || '/api',
       siteUrl: process.env['SITE_URL'] || requestOrigin(request),
       baseHref: process.env['BASE_HREF'] || '/',
-      requestTimeoutMs: Number(process.env['API_REQUEST_TIMEOUT_MS']) || 10_000
+      requestTimeoutMs: Number(process.env['API_REQUEST_TIMEOUT_MS']) || 80_000
     });
-    const status = isKnownApplicationPath(request.path) ? 200 : 404;
+    const responseState: SsrResponseState = {
+      status: isKnownApplicationPath(request.path) ? 200 : 404,
+      location: ''
+    };
 
     commonEngine
       .render({
@@ -67,11 +70,16 @@ export function app(): express.Express {
         publicPath: browserDistFolder,
         providers: [
           { provide: APP_BASE_HREF, useValue: runtimeConfig.baseHref },
-          { provide: APP_RUNTIME_CONFIG_OVERRIDE, useValue: runtimeConfig }
+          { provide: APP_RUNTIME_CONFIG_OVERRIDE, useValue: runtimeConfig },
+          { provide: SSR_RESPONSE_STATE, useValue: responseState }
         ]
       })
       .then((html) => {
-        response.status(status).set('Cache-Control', 'no-store').send(html);
+        if (responseState.location) {
+          response.redirect(responseState.status, responseState.location);
+          return;
+        }
+        response.status(responseState.status).set('Cache-Control', 'no-store').send(html);
       })
       .catch((error: unknown) => next(error));
   });

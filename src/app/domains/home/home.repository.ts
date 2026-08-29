@@ -6,6 +6,7 @@ import { API_ENDPOINTS, SupportedLocale } from '../../core/http/api-endpoints';
 import { ApiError } from '../../core/http/api-error';
 import { normalizeApiError } from '../../core/http/api-error.interceptor';
 import { ApiUrlBuilder } from '../../core/http/api-url.builder';
+import { normalizePublicRouteIndex, publicRouteSlugMap } from '../catalog/public-route-index';
 import {
   normalizeDynamicHomePage,
   normalizeLegacyCategories,
@@ -50,7 +51,9 @@ export class HomeRepository {
   private loadDynamic(locale: SupportedLocale): Observable<HomePageContent> {
     const params = new HttpParams().set('device', 'desktop').set('locale', locale);
     return this.http.get<unknown>(this.urls.api(API_ENDPOINTS.publicHomePage), { params }).pipe(
-      map((response) => normalizeDynamicHomePage(response, locale).content),
+      map(
+        (response) => normalizeDynamicHomePage(response, locale, (source) => this.urls.image(source)).content
+      ),
       catchError((error: unknown) => {
         const normalized = error instanceof ApiError ? error : normalizeApiError(error);
         return isUnsupportedCapability(normalized) ? this.loadLegacy(locale) : throwError(() => error);
@@ -59,20 +62,50 @@ export class HomeRepository {
   }
 
   private loadLegacy(locale: SupportedLocale): Observable<HomePageContent> {
+    const categoryRoutes = this.http
+      .get<unknown>(this.urls.api(API_ENDPOINTS.sitemapCategories), {
+        params: new HttpParams().set('limit', 100)
+      })
+      .pipe(
+        map((response) => publicRouteSlugMap(normalizePublicRouteIndex(response, 'category', locale))),
+        catchError(() => of({} as Readonly<Record<string, string>>))
+      );
+    const productRoutes = this.http
+      .get<unknown>(this.urls.api(API_ENDPOINTS.sitemapProducts), {
+        params: new HttpParams().set('limit', 100)
+      })
+      .pipe(
+        map((response) => publicRouteSlugMap(normalizePublicRouteIndex(response, 'product', locale))),
+        catchError(() => of({} as Readonly<Record<string, string>>))
+      );
     const categories = forkJoin({
       selected: this.http.get<unknown>(this.urls.api(API_ENDPOINTS.homePageCategories)),
-      active: this.http.get<unknown>(this.urls.api(API_ENDPOINTS.activeCategories))
+      active: this.http.get<unknown>(this.urls.api(API_ENDPOINTS.activeCategories)),
+      categoryRoutes,
+      productRoutes
     }).pipe(
       map(
-        ({ selected, active }) =>
-          ({ ok: true, value: normalizeLegacyCategories(selected, active, locale) }) as const
+        ({ selected, active, categoryRoutes, productRoutes }) =>
+          ({
+            ok: true,
+            value: normalizeLegacyCategories(selected, active, locale, (source) => this.urls.image(source), {
+              categories: categoryRoutes,
+              products: productRoutes
+            })
+          }) as const
       ),
       catchError((error: unknown) => of({ ok: false, issue: issueFromError('categories', error) } as const))
     );
     const promotions = this.http
       .get<unknown>(this.urls.api(API_ENDPOINTS.activeWebsiteImagesWithProducts))
       .pipe(
-        map((response) => ({ ok: true, value: normalizeLegacyPromotions(response, locale) }) as const),
+        map(
+          (response) =>
+            ({
+              ok: true,
+              value: normalizeLegacyPromotions(response, locale, (source) => this.urls.image(source))
+            }) as const
+        ),
         catchError((error: unknown) => of({ ok: false, issue: issueFromError('promotions', error) } as const))
       );
 

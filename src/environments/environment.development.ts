@@ -1,7 +1,8 @@
 export const environment = {
   production: false,
-  apiBaseUrl: 'http://localhost:5000/api',
+  // apiBaseUrl: 'http://localhost:5000/api',
+  apiBaseUrl: 'https://api.kapomatic.com/api',
   siteUrl: '',
   baseHref: '/',
-  requestTimeoutMs: 10_000
+  requestTimeoutMs: 80_000
 } as const;

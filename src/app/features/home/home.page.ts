@@ -1,18 +1,15 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
-import {
-  faLocationDot,
-  faRotate,
-  faTruckFast,
-  faTriangleExclamation
-} from '@fortawesome/free-solid-svg-icons';
+import { faRotate, faTruckFast, faTriangleExclamation } from '@fortawesome/free-solid-svg-icons';
 import { ApiUrlBuilder } from '../../core/http/api-url.builder';
 import { LocaleService } from '../../core/i18n/locale.service';
 import { SeoService } from '../../core/seo/seo.service';
 import { CartStore } from '../../domains/cart/cart.store';
+import { HomeCategoriesStore } from '../../domains/home/home-categories.store';
 import { HomeStore } from '../../domains/home/home.store';
 import { StorefrontSettingsStore } from '../../domains/settings/storefront-settings.store';
+import { HomeCategoriesSectionComponent } from './components/home-categories-section.component';
+import { HomeBranchesMapComponent } from './components/home-branches-map.component';
 import { HomeSectionRendererComponent } from './components/home-section-renderer.component';
 import { HomeSkeletonComponent } from './components/home-skeleton.component';
 import { HomeStatePanelComponent } from './components/home-state-panel.component';
@@ -21,7 +18,8 @@ import { HomeStatePanelComponent } from './components/home-state-panel.component
   standalone: true,
   imports: [
     FaIconComponent,
-    RouterLink,
+    HomeBranchesMapComponent,
+    HomeCategoriesSectionComponent,
     HomeSectionRendererComponent,
     HomeSkeletonComponent,
     HomeStatePanelComponent
@@ -32,23 +30,26 @@ import { HomeStatePanelComponent } from './components/home-state-panel.component
 export class HomePageComponent {
   protected readonly locale = inject(LocaleService);
   protected readonly home = inject(HomeStore);
+  protected readonly homeCategories = inject(HomeCategoriesStore);
   protected readonly settings = inject(StorefrontSettingsStore);
   protected readonly cart = inject(CartStore);
   private readonly seo = inject(SeoService);
   private readonly urls = inject(ApiUrlBuilder);
   protected readonly icons = {
-    location: faLocationDot,
     refresh: faRotate,
     shipping: faTruckFast,
     warning: faTriangleExclamation
   };
-  protected readonly hasLocations = computed(() => this.settings.settings().storeLocations.length > 0);
+  protected readonly hasCategorySection = computed(() =>
+    this.home.sections().some((section) => section.type === 'categories')
+  );
   protected readonly hasMalformedIssue = computed(() =>
     this.home.issues().some((issue) => issue.kind === 'contract')
   );
 
   constructor() {
     effect(() => this.home.load(this.locale.locale()), { allowSignalWrites: true });
+    effect(() => this.homeCategories.load(this.locale.locale()), { allowSignalWrites: true });
     effect(() => this.applySeo());
   }
 

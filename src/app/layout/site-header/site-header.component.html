@@ -30,7 +30,7 @@
 >
   <div class="mx-auto max-w-content px-3 py-3 sm:px-4 lg:py-4">
     <div
-      class="grid grid-cols-[44px_minmax(72px,1fr)_44px_44px] items-center gap-1.5 lg:grid-cols-[190px_minmax(280px,1fr)_auto] lg:gap-6"
+      class="grid grid-cols-[44px_minmax(56px,1fr)_auto_44px] items-center gap-1.5 lg:grid-cols-[190px_minmax(280px,1fr)_auto] lg:gap-6"
     >
       <button
         #menuButton
@@ -99,11 +99,12 @@
 
       <button
         type="button"
-        class="inline-flex h-11 w-11 items-center justify-center rounded-md text-text transition hover:bg-surface-muted lg:hidden"
+        class="inline-flex h-11 items-center justify-center gap-1 rounded-md px-2 text-xs font-bold text-text transition hover:bg-surface-muted lg:hidden"
         [attr.aria-label]="locale.translate('header.languageLabel')"
         (click)="switchLocale()"
       >
-        <fa-icon [icon]="icons.globe" aria-hidden="true" />
+        <fa-icon [icon]="icons.language" aria-hidden="true" />
+        <span>{{ locale.translate('header.language') }}</span>
       </button>
 
       <div class="flex items-center justify-end gap-1 sm:gap-2">
@@ -125,25 +126,27 @@
             [attr.aria-label]="locale.translate('header.languageLabel')"
             (click)="switchLocale()"
           >
-            <fa-icon [icon]="icons.globe" aria-hidden="true" />
+            <fa-icon [icon]="icons.language" aria-hidden="true" />
             <span>{{ locale.translate('header.language') }}</span>
           </button>
         }
         @if (config.showCart) {
-          <a
+          <button
+            #cartButton
+            type="button"
             class="relative inline-flex h-11 w-11 items-center justify-center rounded-md text-text transition hover:bg-surface-muted"
-            [routerLink]="['/', locale.locale(), 'cart']"
             [attr.aria-label]="cartLabel()"
+            aria-haspopup="dialog"
+            [attr.aria-expanded]="cartDrawerOpen"
+            (click)="cartRequested.emit()"
           >
             <fa-icon [icon]="icons.cart" aria-hidden="true" />
-            @if (cart.count() > 0) {
-              <span
-                class="absolute -end-0.5 -top-0.5 grid min-h-5 min-w-5 place-items-center rounded-full bg-brand px-1 text-[11px] font-extrabold leading-none text-brand-foreground"
-                aria-hidden="true"
-                >{{ cart.count() }}</span
-              >
-            }
-          </a>
+            <span
+              class="absolute -end-0.5 -top-0.5 grid min-h-5 min-w-5 place-items-center rounded-full bg-brand px-1 text-[11px] font-extrabold leading-none text-brand-foreground"
+              aria-hidden="true"
+              >{{ cart.count() }}</span
+            >
+          </button>
         }
       </div>
     </div>

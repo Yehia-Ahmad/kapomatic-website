@@ -1,12 +1,16 @@
 import { isPlatformBrowser } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, PLATFORM_ID, TransferState, inject, makeStateKey, signal } from '@angular/core';
 import { Observable, catchError, map, of, shareReplay, tap } from 'rxjs';
 import { ApiError } from '../../core/http/api-error';
 import { API_ENDPOINTS, SupportedLocale } from '../../core/http/api-endpoints';
 import { normalizeApiError } from '../../core/http/api-error.interceptor';
 import { ApiUrlBuilder } from '../../core/http/api-url.builder';
-import { fallbackHeaderConfig, normalizeHeaderConfig } from './header.normalizer';
+import {
+  fallbackHeaderConfig,
+  normalizeCategoryNavigation,
+  normalizeHeaderConfig
+} from './header.normalizer';
 import { HeaderConfig } from './header.models';
 
 export type HeaderStatus = 'idle' | 'loading' | 'ready' | 'error';
@@ -50,8 +54,21 @@ export class HeaderStore {
       map((response) => normalizeHeaderConfig(response, locale)),
       catchError((error: unknown) => {
         const normalized = error instanceof ApiError ? error : normalizeApiError(error);
-        if (normalized.status !== 404 && normalized.status !== 501) this.errorSignal.set(normalized);
-        return of(fallbackHeaderConfig(locale));
+        if (normalized.status !== 404 && normalized.status !== 501) {
+          this.errorSignal.set(normalized);
+          return of(fallbackHeaderConfig(locale));
+        }
+        return this.http
+          .get<unknown>(this.urls.api(API_ENDPOINTS.sitemapCategories), {
+            params: new HttpParams().set('limit', 100)
+          })
+          .pipe(
+            map((response) => ({
+              ...fallbackHeaderConfig(locale),
+              navigation: normalizeCategoryNavigation(response, locale)
+            })),
+            catchError(() => of(fallbackHeaderConfig(locale)))
+          );
       }),
       tap((config) => {
         if (!this.isBrowser) this.transferState.set(stateKey, config);

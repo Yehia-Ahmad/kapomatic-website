@@ -3,5 +3,5 @@ export const environment = {
   apiBaseUrl: '/api',
   siteUrl: '',
   baseHref: '/',
-  requestTimeoutMs: 10_000
+  requestTimeoutMs: 80_000
 } as const;

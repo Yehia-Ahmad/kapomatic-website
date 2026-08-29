@@ -12,11 +12,13 @@ export const API_ENDPOINTS = {
   activeWebsiteImagesWithProducts: '/website-images/active-with-products',
   publicHeader: '/header',
   publicHomePage: '/public/home-page',
+  publicHomeCategories: (locale: SupportedLocale) => `/public/${locale}/categories/home`,
   publicSearch: '/public/products/search',
   checkout: '/cart/checkout',
   category: (locale: SupportedLocale, slug: string) => `/public/${locale}/categories/${segment(slug)}`,
   categoryProducts: (locale: SupportedLocale, slug: string) =>
     `/public/${locale}/categories/${segment(slug)}/products`,
+  categoryFilters: (categoryId: string) => `/ecommerce-settings/categories/${segment(categoryId)}/filters`,
   product: (locale: SupportedLocale, slug: string) => `/public/${locale}/products/${segment(slug)}`,
   slugAlias: (locale: SupportedLocale, entity: 'category' | 'product', slug: string) =>
     `/public/${locale}/slug-aliases/${entity}/${segment(slug)}`,

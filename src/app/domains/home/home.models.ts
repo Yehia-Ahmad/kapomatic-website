@@ -1,4 +1,5 @@
 import { SupportedLocale } from '../../core/http/api-endpoints';
+import { AlternateSlugs } from '../catalog/catalog.models';
 
 export type HomeContentSource = 'dynamic-builder' | 'legacy-confirmed';
 export type HomeIssueKind = 'request' | 'contract';
@@ -18,6 +19,16 @@ export interface HomeContentIssue {
 }
 
 export interface HomeCategory {
+  readonly id: string;
+  readonly name: string;
+  readonly activeSlug: string;
+  readonly localizedSlugs: AlternateSlugs;
+  readonly imageUrl: string | null;
+  readonly imageAlt: string;
+  readonly productsCount: number;
+}
+
+export interface HomeEmbeddedCategory {
   readonly id: string;
   readonly name: string;
   readonly imageUrl: string;
@@ -40,6 +51,7 @@ export interface HomeProduct {
   readonly name: string;
   readonly code: string;
   readonly slug: string;
+  readonly alternateSlugs: AlternateSlugs;
   readonly imageUrl: string;
   readonly imageAlt: string;
   readonly price: HomePrice | null;
@@ -71,12 +83,15 @@ export interface HomeCollectionSettings {
   readonly columns: { readonly desktop: number; readonly tablet: number; readonly mobile: number };
   readonly viewAllUrl: string;
   readonly viewAllLabel: string;
+  readonly imageShape: 'circle' | 'square' | 'rounded';
+  readonly imageBorderRadius: number;
+  readonly showCategoryName: boolean;
 }
 
 export type HomeSection =
   | (HomeSectionBase & {
       readonly type: 'categories';
-      readonly categories: readonly HomeCategory[];
+      readonly categories: readonly HomeEmbeddedCategory[];
       readonly settings: HomeCollectionSettings;
     })
   | (HomeSectionBase & {

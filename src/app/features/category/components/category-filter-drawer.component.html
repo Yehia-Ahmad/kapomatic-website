@@ -1,0 +1,98 @@
+<div class="fixed inset-0 z-[120]">
+  <button
+    type="button"
+    class="absolute inset-0 cursor-default bg-black/55"
+    [attr.aria-label]="locale.translate('category.closeFilters')"
+    (click)="closeRequested.emit()"
+  ></button>
+  <aside
+    #dialogPanel
+    class="absolute bottom-0 end-0 top-0 flex w-full flex-col bg-surface shadow-lg sm:w-[min(92vw,24rem)]"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="category-filter-drawer-title"
+  >
+    <div class="flex min-h-16 items-center justify-between gap-3 border-b border-border px-4">
+      <div class="min-w-0">
+        <h2 id="category-filter-drawer-title" class="text-lg font-extrabold">
+          {{ locale.translate('category.filters') }}
+        </h2>
+        <p class="text-xs text-text-muted">
+          {{ locale.interpolate('category.selectedFilters', { count: selectedCount() }) }}
+        </p>
+      </div>
+      <button
+        #closeButton
+        type="button"
+        class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md hover:bg-surface-muted"
+        [attr.aria-label]="locale.translate('category.closeFilters')"
+        (click)="closeRequested.emit()"
+      >
+        <fa-icon [icon]="icons.close" aria-hidden="true" />
+      </button>
+    </div>
+
+    <div class="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
+      @for (group of groups; track group.id) {
+        <details class="border-b border-border pb-4" open>
+          <summary class="flex min-h-11 cursor-pointer items-center justify-between gap-3 font-extrabold">
+            <span>{{ group.title }}</span>
+            <fa-icon class="text-xs" [icon]="icons.chevron" aria-hidden="true" />
+          </summary>
+          <fieldset class="mt-2">
+            <legend class="sr-only">{{ group.title }}</legend>
+            <div class="space-y-1">
+              @for (value of group.values; track value.id) {
+                <label
+                  class="flex min-h-11 cursor-pointer items-center gap-3 rounded-md px-2 hover:bg-surface-muted"
+                  [class.cursor-not-allowed]="value.disabled"
+                  [class.text-text-muted]="value.disabled"
+                >
+                  <input
+                    class="h-5 w-5 rounded border-border text-brand focus:ring-brand"
+                    type="checkbox"
+                    [checked]="draft()[group.id] === value.label"
+                    [disabled]="value.disabled"
+                    (change)="toggle(group.id, value.label)"
+                  />
+                  <span class="min-w-0 flex-1 break-words">{{ value.label }}</span>
+                  @if (value.count !== null) {
+                    <span class="text-xs text-text-muted">{{ value.count }}</span>
+                  }
+                </label>
+              }
+            </div>
+            @if (draft()[group.id]) {
+              <button
+                type="button"
+                class="mt-2 min-h-11 rounded-md px-2 text-sm font-bold text-brand-active hover:bg-brand-soft"
+                (click)="clearGroup(group.id)"
+              >
+                {{ locale.translate('category.clearGroup') }}
+              </button>
+            }
+          </fieldset>
+        </details>
+      }
+    </div>
+
+    <div
+      class="grid grid-cols-2 gap-3 border-t border-border bg-surface p-4 pb-[max(1rem,env(safe-area-inset-bottom))]"
+    >
+      <button
+        type="button"
+        class="min-h-11 rounded-md border border-border bg-surface px-3 font-extrabold hover:bg-surface-muted"
+        (click)="clearAll()"
+      >
+        {{ locale.translate('category.clearAll') }}
+      </button>
+      <button
+        type="button"
+        class="min-h-11 rounded-md bg-brand px-3 font-extrabold text-brand-foreground hover:bg-brand-hover"
+        (click)="applyRequested.emit(draft())"
+      >
+        {{ locale.translate('category.applyFilters') }}
+      </button>
+    </div>
+  </aside>
+</div>

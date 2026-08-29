@@ -77,6 +77,14 @@
       </div>
     </section>
   }
+  @case ('categories') {
+    <app-home-categories-section
+      [title]="sectionTitle(section)"
+      [subtitle]="section.subtitle"
+      [backgroundColor]="section.backgroundColor"
+      [settings]="section.settings"
+    />
+  }
   @default {
     <section
       class="mx-auto max-w-content px-4 py-8 sm:py-10"
@@ -91,10 +99,7 @@
             <p class="mt-2 max-w-2xl text-sm leading-7 text-text-muted">{{ section.subtitle }}</p>
           }
         </div>
-        @if (
-          (section.type === 'categories' || section.type === 'products' || section.type === 'bundles') &&
-          section.settings.viewAllUrl
-        ) {
+        @if ((section.type === 'products' || section.type === 'bundles') && section.settings.viewAllUrl) {
           <a
             class="hidden min-h-11 shrink-0 items-center gap-2 rounded-md px-2 text-sm font-extrabold text-brand-active hover:bg-brand-soft sm:inline-flex"
             [routerLink]="localizedUrl(section.settings.viewAllUrl)"
@@ -105,18 +110,7 @@
         }
       </div>
 
-      @if (section.type === 'categories') {
-        <div
-          class="home-grid mt-5"
-          [style.--columns-mobile]="section.settings.columns.mobile"
-          [style.--columns-tablet]="section.settings.columns.tablet"
-          [style.--columns-desktop]="section.settings.columns.desktop"
-        >
-          @for (category of section.categories; track category.id) {
-            <app-home-category-card [category]="category" />
-          }
-        </div>
-      } @else if (section.type === 'products') {
+      @if (section.type === 'products') {
         <div
           class="home-grid mt-5"
           [style.--columns-mobile]="section.settings.columns.mobile"

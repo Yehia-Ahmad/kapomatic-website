@@ -1,8 +1,11 @@
-export interface StoreLocation {
+export interface BranchLocation {
   readonly id: string;
   readonly name: string;
-  readonly detailedLocation: string;
-  readonly mapLink: string;
+  readonly address?: string;
+  readonly phone?: string;
+  readonly latitude: number;
+  readonly longitude: number;
+  readonly googleMapsUrl?: string;
 }
 
 export interface SocialMediaLink {
@@ -18,7 +21,7 @@ export interface StorefrontSettings {
   readonly freeShippingMinimumAmount: number;
   readonly walletPhone: string;
   readonly instapayLink: string;
-  readonly storeLocations: readonly StoreLocation[];
+  readonly storeLocations: readonly BranchLocation[];
   readonly socialMediaLinks: readonly SocialMediaLink[];
 }
 

@@ -1,8 +1,9 @@
 import { SupportedLocale } from '../../core/http/api-endpoints';
-import { safeImageSource, safePublicLink } from '../../core/security/public-url.utils';
+import { ImageSourceNormalizer, safeImageSource, safePublicLink } from '../../core/security/public-url.utils';
+import { normalizePrice as normalizeSharedPrice } from '../../shared/pricing/normalized-price';
 import {
   HomeBundle,
-  HomeCategory,
+  HomeEmbeddedCategory,
   HomeCollectionSettings,
   HomeContractError,
   HomeFeature,
@@ -27,7 +28,16 @@ export interface DynamicHomeNormalization {
   readonly discardedSectionCount: number;
 }
 
-export function normalizeDynamicHomePage(source: unknown, locale: SupportedLocale): DynamicHomeNormalization {
+export interface LegacyHomeRouteSlugs {
+  readonly categories?: Readonly<Record<string, string>>;
+  readonly products?: Readonly<Record<string, string>>;
+}
+
+export function normalizeDynamicHomePage(
+  source: unknown,
+  locale: SupportedLocale,
+  normalizeImage: ImageSourceNormalizer = safeImageSource
+): DynamicHomeNormalization {
   if (asRecord(source)['success'] === false) {
     throw new HomeContractError('HOME_RESPONSE_UNSUCCESSFUL');
   }
@@ -37,7 +47,7 @@ export function normalizeDynamicHomePage(source: unknown, locale: SupportedLocal
   let discardedSectionCount = 0;
   const sections = root['sections']
     .map((entry) => {
-      const section = normalizeSection(entry, locale);
+      const section = normalizeSection(entry, locale, normalizeImage);
       if (!section) discardedSectionCount += 1;
       return section;
     })
@@ -73,7 +83,9 @@ export function normalizeDynamicHomePage(source: unknown, locale: SupportedLocal
 export function normalizeLegacyCategories(
   selectedSource: unknown,
   activeSource: unknown,
-  locale: SupportedLocale
+  locale: SupportedLocale,
+  normalizeImage: ImageSourceNormalizer = safeImageSource,
+  routeSlugs: LegacyHomeRouteSlugs = {}
 ): readonly HomeSection[] {
   const selectedRoot = unwrapData(selectedSource);
   if (!Array.isArray(selectedRoot['categoryIds']) && !Array.isArray(selectedRoot['categories'])) {
@@ -100,10 +112,17 @@ export function normalizeLegacyCategories(
       .filter((entry): entry is readonly [string, Record<string, unknown>] => Boolean(entry[0]))
   );
   const categories = orderedIds
-    .map((id) =>
-      normalizeCategory(categoryById.get(id) ?? asRecord(activeById.get(id)?.['category']), locale)
-    )
-    .filter((item): item is HomeCategory => item !== null);
+    .map((id) => {
+      const selected = categoryById.get(id) ?? {};
+      const active = asRecord(activeById.get(id)?.['category']);
+      return normalizeCategory(
+        { ...active, ...selected, translations: active['translations'] ?? selected['translations'] },
+        locale,
+        normalizeImage,
+        routeSlugs.categories?.[id]
+      );
+    })
+    .filter((item): item is HomeEmbeddedCategory => item !== null);
 
   const sections: HomeSection[] = [];
   if (categories.length > 0) {
@@ -125,7 +144,9 @@ export function normalizeLegacyCategories(
     const selectedSet = new Set(selectedProductIds);
     const products = readArray(row['products'])
       .filter((product) => selectedSet.has(readId(product)))
-      .map((product) => normalizeProduct(product, locale))
+      .map((product) =>
+        normalizeProduct(product, locale, normalizeImage, routeSlugs.products?.[readId(product)])
+      )
       .filter((product): product is HomeProduct => product !== null)
       .slice(0, 10);
     if (products.length === 0) continue;
@@ -135,16 +156,20 @@ export function normalizeLegacyCategories(
       products,
       settings: {
         ...defaultCollectionSettings(),
-        viewAllUrl: category.slug ? `/${locale}/categories/${encodeURIComponent(category.slug)}` : ''
+        viewAllUrl: category.slug ? `/${locale}/categories/${category.slug}` : ''
       }
     });
   }
   return sections;
 }
 
-export function normalizeLegacyPromotions(source: unknown, locale: SupportedLocale): readonly HomeSection[] {
+export function normalizeLegacyPromotions(
+  source: unknown,
+  locale: SupportedLocale,
+  normalizeImage: ImageSourceNormalizer = safeImageSource
+): readonly HomeSection[] {
   const slides = unwrapArrayStrict(source, 'LEGACY_PROMOTIONS_INVALID')
-    .map((item, index) => normalizeLegacySlide(item, locale, index))
+    .map((item, index) => normalizeLegacySlide(item, locale, index, normalizeImage))
     .filter((slide): slide is HomeOfferSlide => slide !== null);
   if (slides.length === 0) return [];
   return [
@@ -157,7 +182,11 @@ export function normalizeLegacyPromotions(source: unknown, locale: SupportedLoca
   ];
 }
 
-function normalizeSection(source: unknown, locale: SupportedLocale): HomeSection | null {
+function normalizeSection(
+  source: unknown,
+  locale: SupportedLocale,
+  normalizeImage: ImageSourceNormalizer
+): HomeSection | null {
   const value = asRecord(source);
   const type = readString(value['type']);
   const id = readId(value);
@@ -174,15 +203,15 @@ function normalizeSection(source: unknown, locale: SupportedLocale): HomeSection
   switch (type) {
     case 'categories': {
       const categories = readArray(settings['categories'])
-        .map((item) => normalizeCategory(item, locale))
-        .filter((item): item is HomeCategory => item !== null);
+        .map((item) => normalizeCategory(item, locale, normalizeImage))
+        .filter((item): item is HomeEmbeddedCategory => item !== null);
       return categories.length
         ? { ...base, type, categories, settings: collectionSettings(settings, locale) }
         : null;
     }
     case 'products': {
       const products = readArray(settings['products'])
-        .map((item) => normalizeProduct(item, locale))
+        .map((item) => normalizeProduct(item, locale, normalizeImage))
         .filter((item): item is HomeProduct => item !== null);
       return products.length
         ? { ...base, type, products, settings: collectionSettings(settings, locale) }
@@ -190,7 +219,7 @@ function normalizeSection(source: unknown, locale: SupportedLocale): HomeSection
     }
     case 'bundles': {
       const bundles = readArray(settings['bundles'])
-        .map((item) => normalizeBundle(item, locale))
+        .map((item) => normalizeBundle(item, locale, normalizeImage))
         .filter((item): item is HomeBundle => item !== null);
       return bundles.length
         ? { ...base, type, bundles, settings: collectionSettings(settings, locale) }
@@ -198,7 +227,7 @@ function normalizeSection(source: unknown, locale: SupportedLocale): HomeSection
     }
     case 'offers_slider': {
       const slides = readArray(settings['slides'])
-        .map((item, slideIndex) => normalizeSlide(item, locale, slideIndex))
+        .map((item, slideIndex) => normalizeSlide(item, locale, slideIndex, normalizeImage))
         .filter((item): item is HomeOfferSlide => item !== null);
       return slides.length ? { ...base, type, slides, settings: sliderSettings(settings) } : null;
     }
@@ -218,7 +247,7 @@ function normalizeSection(source: unknown, locale: SupportedLocale): HomeSection
     }
     case 'features_bar': {
       const items = readArray(settings['items'])
-        .map((item, itemIndex) => normalizeFeature(item, locale, itemIndex))
+        .map((item, itemIndex) => normalizeFeature(item, locale, itemIndex, normalizeImage))
         .filter((item): item is HomeFeature => item !== null);
       return items.length ? { ...base, type, items } : null;
     }
@@ -227,38 +256,60 @@ function normalizeSection(source: unknown, locale: SupportedLocale): HomeSection
   }
 }
 
-function normalizeCategory(source: unknown, locale: SupportedLocale): HomeCategory | null {
+function normalizeCategory(
+  source: unknown,
+  locale: SupportedLocale,
+  normalizeImage: ImageSourceNormalizer,
+  routeSlug = ''
+): HomeEmbeddedCategory | null {
   const value = asRecord(source);
   const id = readId(value);
   const name = readLocalized(value, 'name', locale) || readLocalized(value, 'title', locale);
   if (!id || !name) return null;
-  const imageUrl = imageFrom(value['image'] ?? value['imageUrl']);
+  const imageUrl = imageFrom(
+    value['publicImageUrl'] ?? value['imageUrl'] ?? value['image'] ?? value['imageBase64'],
+    normalizeImage
+  );
   return {
     id,
     name,
     imageUrl,
-    imageAlt: readLocalized(value, 'altText', locale) || name,
-    slug: readLocalized(value, 'slug', locale)
+    imageAlt: readLocalized(value, 'imageAlt', locale) || readLocalized(value, 'altText', locale) || name,
+    slug: readLocalized(value, 'slug', locale) || routeSlug
   };
 }
 
-function normalizeProduct(source: unknown, locale: SupportedLocale): HomeProduct | null {
+function normalizeProduct(
+  source: unknown,
+  locale: SupportedLocale,
+  normalizeImage: ImageSourceNormalizer,
+  routeSlug = ''
+): HomeProduct | null {
   const value = asRecord(source);
   const id = readId(value);
   const name = readLocalized(value, 'name', locale) || readLocalized(value, 'title', locale);
   if (!id || !name) return null;
   const inventory = finiteNumber(value['inventoryCount'] ?? value['stockQuantity']);
   const category = asRecord(value['category']);
-  const imageUrl = imageFrom(value['image'] ?? value['imageUrl'] ?? value['images']);
+  const imageUrl = imageFrom(
+    value['publicImageUrl'] ?? value['imageUrl'] ?? value['images'] ?? value['image'] ?? value['imageBase64'],
+    normalizeImage
+  );
+  const translations = asRecord(value['translations']);
+  const alternateSlugs = {
+    ar: readString(asRecord(translations['ar'])['slug']) || undefined,
+    en: readString(asRecord(translations['en'])['slug']) || undefined
+  };
   return {
     kind: 'product',
     id,
     categoryId: readId(category) || readString(value['categoryId']),
     name,
     code: readString(value['code'] ?? value['sku']),
-    slug: readLocalized(value, 'slug', locale),
+    slug: readLocalized(value, 'slug', locale) || routeSlug || id,
+    alternateSlugs,
     imageUrl,
-    imageAlt: readLocalized(value, 'altText', locale) || name,
+    imageAlt: readLocalized(value, 'imageAlt', locale) || readLocalized(value, 'altText', locale) || name,
     price: normalizePrice(
       value['retailPrice'] ?? value['oldPrice'] ?? value['regularPrice'],
       value['priceAfterDiscount'] ?? value['salePrice'],
@@ -269,7 +320,11 @@ function normalizeProduct(source: unknown, locale: SupportedLocale): HomeProduct
   };
 }
 
-function normalizeBundle(source: unknown, locale: SupportedLocale): HomeBundle | null {
+function normalizeBundle(
+  source: unknown,
+  locale: SupportedLocale,
+  normalizeImage: ImageSourceNormalizer
+): HomeBundle | null {
   const value = asRecord(source);
   const id = readId(value);
   const name = readLocalized(value, 'name', locale) || readLocalized(value, 'title', locale);
@@ -279,7 +334,7 @@ function normalizeBundle(source: unknown, locale: SupportedLocale): HomeBundle |
     id,
     name,
     slug: readLocalized(value, 'slug', locale),
-    imageUrl: imageFrom(value['image'] ?? value['imageUrl']),
+    imageUrl: imageFrom(value['imageUrl'] ?? value['image'] ?? value['imageBase64'], normalizeImage),
     imageAlt: readLocalized(value, 'altText', locale) || name,
     price: normalizePrice(
       value['originalPrice'] ?? value['oldPrice'] ?? value['regularPrice'],
@@ -291,23 +346,29 @@ function normalizeBundle(source: unknown, locale: SupportedLocale): HomeBundle |
 }
 
 function normalizePrice(regularSource: unknown, saleSource: unknown, discountSource: unknown) {
-  const regular = finiteNumber(regularSource);
-  if (regular === null || regular < 0) return null;
-  const possibleSale = finiteNumber(saleSource);
-  const sale = possibleSale !== null && possibleSale >= 0 && possibleSale < regular ? possibleSale : null;
-  const suppliedDiscount = finiteNumber(discountSource);
-  const derived = sale === null || regular === 0 ? 0 : Math.round(((regular - sale) / regular) * 100);
-  const discount =
-    suppliedDiscount !== null && suppliedDiscount > 0 && suppliedDiscount < 100
-      ? Math.round(suppliedDiscount)
-      : derived;
-  return { regular, sale, discountPercentage: sale === null ? 0 : discount };
+  const price = normalizeSharedPrice({
+    retailPrice: regularSource,
+    priceAfterDiscount: saleSource,
+    discountPercentage: discountSource
+  });
+  return price
+    ? {
+        regular: price.original,
+        sale: price.hasDiscount ? price.effective : null,
+        discountPercentage: price.discountPercentage
+      }
+    : null;
 }
 
-function normalizeSlide(source: unknown, locale: SupportedLocale, index: number): HomeOfferSlide | null {
+function normalizeSlide(
+  source: unknown,
+  locale: SupportedLocale,
+  index: number,
+  normalizeImage: ImageSourceNormalizer
+): HomeOfferSlide | null {
   const value = asRecord(source);
-  const desktopImageUrl = imageFrom(value['desktopImage']);
-  const mobileImageUrl = imageFrom(value['mobileImage']) || desktopImageUrl;
+  const desktopImageUrl = imageFrom(value['desktopImage'], normalizeImage);
+  const mobileImageUrl = imageFrom(value['mobileImage'], normalizeImage) || desktopImageUrl;
   if (!desktopImageUrl && !mobileImageUrl) return null;
   const button = asRecord(value['button']);
   const candidateUrl = readString(value['slideUrl']) || readString(button['url']);
@@ -329,10 +390,11 @@ function normalizeSlide(source: unknown, locale: SupportedLocale, index: number)
 function normalizeLegacySlide(
   source: unknown,
   locale: SupportedLocale,
-  index: number
+  index: number,
+  normalizeImage: ImageSourceNormalizer
 ): HomeOfferSlide | null {
   const value = asRecord(source);
-  const imageUrl = imageFrom(value['imageUrl'] ?? value['image']);
+  const imageUrl = imageFrom(value['imageUrl'] ?? value['image'] ?? value['imageBase64'], normalizeImage);
   if (!imageUrl) return null;
   const link = safePublicLink(value['url'] ?? value['link'] ?? value['targetUrl']);
   const title = readLocalized(value, 'title', locale) || readLocalized(value, 'name', locale);
@@ -369,14 +431,19 @@ function normalizeTextLink(
   };
 }
 
-function normalizeFeature(source: unknown, locale: SupportedLocale, index: number): HomeFeature | null {
+function normalizeFeature(
+  source: unknown,
+  locale: SupportedLocale,
+  index: number,
+  normalizeImage: ImageSourceNormalizer
+): HomeFeature | null {
   const link = normalizeTextLink(source, locale, index, 'title');
   if (!link) return null;
   const value = asRecord(source);
   return {
     ...link,
     description: readLocalized(value, 'description', locale),
-    iconUrl: imageFrom(value['icon'])
+    iconUrl: imageFrom(value['icon'], normalizeImage)
   };
 }
 
@@ -395,7 +462,10 @@ function collectionSettings(
       mobile: boundedInteger(columns['mobile'], 1, 2, 2)
     },
     viewAllUrl: viewAllLink?.kind === 'internal' ? viewAllLink.url : '',
-    viewAllLabel: readLocalized(viewAll, 'label', locale)
+    viewAllLabel: readLocalized(viewAll, 'label', locale),
+    imageShape: normalizeImageShape(source['imageShape']),
+    imageBorderRadius: boundedInteger(source['imageBorderRadius'], 0, 48, 14),
+    showCategoryName: readBoolean(source['showCategoryName'], true)
   };
 }
 
@@ -404,8 +474,16 @@ function defaultCollectionSettings(): HomeCollectionSettings {
     layout: 'grid',
     columns: { desktop: 5, tablet: 3, mobile: 2 },
     viewAllUrl: '',
-    viewAllLabel: ''
+    viewAllLabel: '',
+    imageShape: 'rounded',
+    imageBorderRadius: 14,
+    showCategoryName: true
   };
+}
+
+function normalizeImageShape(source: unknown): HomeCollectionSettings['imageShape'] {
+  const value = readString(source);
+  return value === 'circle' || value === 'square' ? value : 'rounded';
 }
 
 function sliderSettings(source: Record<string, unknown>) {
@@ -436,11 +514,18 @@ function baseSection(id: string, title: string, subtitle: string, fullWidth = fa
   return { id, title, subtitle, fullWidth, backgroundColor };
 }
 
-function imageFrom(source: unknown): string {
-  if (Array.isArray(source)) return imageFrom(source[0]);
-  if (typeof source === 'string') return safeImageSource(source);
+function imageFrom(source: unknown, normalizeImage: ImageSourceNormalizer): string {
+  if (Array.isArray(source)) return imageFrom(source[0], normalizeImage);
+  if (typeof source === 'string') return normalizeImage(source);
   const value = asRecord(source);
-  return safeImageSource(value['url'] ?? value['src'] ?? value['imageUrl'] ?? value['imageBase64']);
+  return normalizeImage(
+    value['publicImageUrl'] ??
+      value['url'] ??
+      value['src'] ??
+      value['imageUrl'] ??
+      value['image'] ??
+      value['imageBase64']
+  );
 }
 
 function readLocalized(source: Record<string, unknown>, field: string, locale: SupportedLocale): string {

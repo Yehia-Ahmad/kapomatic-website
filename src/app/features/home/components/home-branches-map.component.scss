@@ -1,0 +1,85 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.branch-map-card,
+.branch-map-shell,
+.branch-map,
+.branch-map.leaflet-container {
+  width: 100%;
+  min-width: 0;
+}
+
+.branch-map-shell {
+  position: relative;
+  width: 100%;
+  height: clamp(380px, 42vw, 520px);
+  min-width: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  background: var(--color-surface-muted);
+}
+
+.branch-map,
+.branch-map.leaflet-container {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0;
+  direction: ltr;
+}
+
+:host ::ng-deep .leaflet-container img {
+  max-width: none !important;
+}
+
+:host ::ng-deep .branch-marker-wrapper {
+  border: 0;
+  background: transparent;
+}
+
+:host ::ng-deep .branch-marker {
+  display: grid;
+  width: 40px;
+  height: 48px;
+  place-items: start center;
+  color: var(--brand-primary, #facc15);
+  filter: drop-shadow(0 3px 2px rgb(0 0 0 / 35%));
+}
+
+:host ::ng-deep .branch-marker svg {
+  display: block;
+  width: 40px;
+  height: 48px;
+}
+
+:host ::ng-deep .branch-popup {
+  min-width: 11rem;
+  line-height: 1.6;
+  text-align: start;
+}
+
+:host ::ng-deep .branch-popup__address {
+  margin: 0.25rem 0 0.75rem;
+  color: var(--color-text-muted);
+}
+
+:host ::ng-deep .branch-popup__phone,
+:host ::ng-deep .branch-popup__directions {
+  display: block;
+  margin-top: 0.5rem;
+  color: var(--brand-primary-active);
+  font-weight: 800;
+}
+
+@media (max-width: 47.9375rem) {
+  .branch-map-shell {
+    height: 360px;
+  }
+}
+
+::ng-deep .leaflet-control-attribution {
+  display: none !important;
+}

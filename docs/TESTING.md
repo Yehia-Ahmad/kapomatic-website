@@ -9,6 +9,8 @@
 
 Current tests cover the foundation plus public URL safety, dynamic Home/legacy adapters, capability negotiation, header normalization, search submission, mobile-drawer dialog behavior, cart versioning/merge/corruption, semantic color behavior and settings normalization.
 
+The customer-journey suite additionally covers catalog DTO normalization, API-aware image URLs, localized sitemap route extraction, Home slug enrichment, Category/Product repository URLs, pricing, Cart migration/revalidation and the shared header/category fallback.
+
 ## Release test layers
 
 | Layer         | Required coverage                                                                            |
@@ -58,3 +60,20 @@ WCAG 2.2 AA cannot be claimed from automated tests alone.
 - Platform-interceptor tests prove that a server-relative `/api` request becomes a retryable normalized 502 without reaching the HTTP backend, while the identical relative request remains available to the browser proxy.
 - Built runtime checks: `/` returned 308 to `/ar`; SSR `/ar` and `/en` returned 200; hydrated Chrome reported Angular 17.3.12, the correct `lang`/`dir`, a rendered `#main-content`, no DI error text, and the designed localized degraded state while the backend/reverse proxy was unavailable.
 - The SSR-enabled Angular development server also returned `/ar` and `/en` in the degraded state without recursion or injector errors after adding the server-relative API guard.
+
+## Image and localized-navigation integration regression — 2026-08-26
+
+- `npm run typecheck`, `npm run lint`, `npm run test:ci` (70/70), production browser+SSR build and `git diff --check` passed.
+- Live API inspection confirmed that the storefront-host product image URL returned HTML after redirect, while the normalized configured-API URL returned `200 image/jpeg`; the corrected category endpoint also returned `200 image/jpeg`.
+- Built SSR emitted configured-API product image sources, canonical Arabic/English Product and Category links, and 301 redirects from supported ID resolver URLs to localized slugs. Arabic Home category/view-all links were checked for single encoding.
+- The isolated Chrome journey verified Home category/product links, shared category navigation, Category product links, Cart image loading, Cart image/name navigation, persistence after refresh, Arabic/English alternate slugs and Cart locale switching. All settled pages reported zero broken images, zero hydration errors and no console errors.
+- Evidence: `docs/screenshots/customer-journey-visual-qa.json` and the `*-real.png` Category/Product/Cart/Drawer screenshots in the same directory.
+
+## Public Home Categories integration — 2026-08-28
+
+- Final gates passed: `format:check`, `typecheck`, `lint`, 89/89 ChromeHeadless tests, production browser+SSR build and `git diff --check`. The build emitted no warnings; current browser initial total is 363.50 kB raw / 97.57 kB estimated transfer and the Home lazy chunk is 58.33/13.14 kB.
+- Unit/component coverage validates the exact Arabic/English URL with `limit=12`, no duplicate `/api`, DTO-to-domain mapping, preserved alternate slugs, authoritative counts, unsafe/missing/failed image handling, whole-card localized RouterLinks, missing-slug defense, retained Home image/name settings, loading/empty/network/malformed/Retry states, no per-Category Product calls and no hydration repeat after successful TransferState.
+- The built SSR fixture returned 200 for `/ar` and `/en`, emitted `kapomatic-home-categories-v1-ar|en`, rendered `92 منتج` / `92 products`, and emitted the localized Category routes. A real hydrated Chrome run recorded exactly one `GET /api/public/ar/categories/home?limit=12`; the expected image request also succeeded.
+- CDP responsive inspection at 320, 375, 768, 1024 and 1440 px in Arabic and English found `clientWidth === scrollWidth`, loaded images, correct localized links/counts and card touch areas larger than 44 px.
+- Loaded-state screenshots use an isolated contract fixture because the production deployment returned 404 for the new endpoint. The fixture uses the real currently public Category record/image and is not present in production source: `home-categories-ar-desktop-contract-fixture.png`, `home-categories-ar-mobile-320-contract-fixture.png`, `home-categories-en-desktop-contract-fixture.png`, and `home-categories-en-mobile-320-contract-fixture.png`.
+- Live production-backed SSR still returned 200 for `/ar`, `/en`, `/ar/categories/فلاتر-فتيس` and `/en/categories/transmission-filters`; Home exposed the localized recoverable Categories error rather than misreporting the undeployed 404 as an empty response.

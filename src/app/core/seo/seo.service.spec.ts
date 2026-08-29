@@ -65,4 +65,19 @@ describe('SeoService', () => {
     expect(document.querySelectorAll('link[rel="canonical"]')).toHaveSize(1);
     expect(document.querySelectorAll('#kapomatic-structured-data')).toHaveSize(0);
   });
+
+  it('preserves a safe absolute product image URL', () => {
+    const seo = TestBed.inject(SeoService);
+    const meta = TestBed.inject(Meta);
+
+    seo.apply({
+      title: 'Product',
+      description: 'Description',
+      path: '/en/products/product',
+      locale: 'en',
+      imageUrl: 'https://cdn.example/product.webp'
+    });
+
+    expect(meta.getTag("property='og:image'")?.content).toBe('https://cdn.example/product.webp');
+  });
 });

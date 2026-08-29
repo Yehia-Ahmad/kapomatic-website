@@ -16,6 +16,7 @@ import { HeaderNavigationItem } from '../../domains/header/header.models';
 import { HeaderStore } from '../../domains/header/header.store';
 import { StorefrontSettingsStore } from '../../domains/settings/storefront-settings.store';
 import { MobileNavDrawerComponent } from '../mobile-nav-drawer/mobile-nav-drawer.component';
+import { CartDrawerComponent } from '../cart-drawer/cart-drawer.component';
 import { SiteFooterComponent } from '../site-footer/site-footer.component';
 import { SiteHeaderComponent } from '../site-header/site-header.component';
 
@@ -26,7 +27,8 @@ import { SiteHeaderComponent } from '../site-header/site-header.component';
     FaIconComponent,
     SiteHeaderComponent,
     SiteFooterComponent,
-    MobileNavDrawerComponent
+    MobileNavDrawerComponent,
+    CartDrawerComponent
   ],
   templateUrl: './storefront-shell.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -35,7 +37,9 @@ export class StorefrontShellComponent {
   protected readonly locale = inject(LocaleService);
   protected readonly header = inject(HeaderStore);
   protected readonly settings = inject(StorefrontSettingsStore);
-  protected readonly drawerOpen = signal(false);
+  protected readonly navDrawerOpen = signal(false);
+  protected readonly cartDrawerOpen = signal(false);
+  protected readonly overlayOpen = computed(() => this.navDrawerOpen() || this.cartDrawerOpen());
   protected readonly whatsappIcon = faWhatsapp;
   @ViewChild(SiteHeaderComponent) private siteHeader?: SiteHeaderComponent;
 
@@ -45,12 +49,14 @@ export class StorefrontShellComponent {
   protected readonly mobileLogoUrl = computed(() => this.header.config().mobileLogoUrl || this.logoUrl());
   protected readonly navigation = computed<readonly HeaderNavigationItem[]>(() => {
     const dynamic = [...this.header.config().navigation, ...this.header.config().actions];
-    if (dynamic.length > 0) return deduplicateNavigation(dynamic);
-    return [
-      staticItem('home', this.locale.translate('nav.home'), '/'),
-      staticItem('catalog', this.locale.translate('nav.catalog'), '/search'),
-      staticItem('locations', this.locale.translate('nav.locations'), '/locations')
-    ];
+    const home = staticItem('home', this.locale.translate('nav.home'), '/');
+    const catalog = staticItem('catalog', this.locale.translate('nav.catalog'), '/search');
+    const locations = staticItem('locations', this.locale.translate('nav.locations'), '/branches');
+    if (dynamic.length === 0) return [home, catalog, locations];
+    if (this.header.config().source === 'safe-fallback') {
+      return [home, { ...catalog, children: deduplicateNavigation(dynamic) }, locations];
+    }
+    return deduplicateNavigation(dynamic);
   });
   protected readonly whatsappHref = computed(() => {
     const contact = this.header.config().contact;
@@ -66,8 +72,18 @@ export class StorefrontShellComponent {
   }
 
   protected closeDrawer(): void {
-    this.drawerOpen.set(false);
+    this.navDrawerOpen.set(false);
     queueMicrotask(() => this.siteHeader?.focusMenuButton());
+  }
+
+  protected openCartDrawer(): void {
+    this.navDrawerOpen.set(false);
+    this.cartDrawerOpen.set(true);
+  }
+
+  protected closeCartDrawer(): void {
+    this.cartDrawerOpen.set(false);
+    queueMicrotask(() => this.siteHeader?.focusCartButton());
   }
 }
 

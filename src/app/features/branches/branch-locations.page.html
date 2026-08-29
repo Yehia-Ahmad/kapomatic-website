@@ -1,0 +1,27 @@
+<main id="main-content" class="min-h-[60vh] bg-canvas" tabindex="-1">
+  <div class="mx-auto max-w-wide px-4 py-8 sm:py-10">
+    <nav [attr.aria-label]="locale.translate('branches.breadcrumb')" class="mb-5 text-sm text-text-muted">
+      <ol class="flex flex-wrap items-center gap-2">
+        <li>
+          <a
+            class="min-h-11 rounded-md py-2 font-bold hover:text-brand-active"
+            [routerLink]="['/', locale.locale()]"
+          >
+            {{ locale.translate('nav.home') }}
+          </a>
+        </li>
+        <li aria-hidden="true">/</li>
+        <li class="font-bold text-text" aria-current="page">{{ locale.translate('branches.title') }}</li>
+      </ol>
+    </nav>
+
+    <header class="mb-8 max-w-3xl">
+      <h1 class="text-3xl font-extrabold text-text sm:text-4xl">{{ locale.translate('branches.title') }}</h1>
+      <p class="mt-3 text-base leading-8 text-text-muted">
+        {{ locale.translate('branches.introduction') }}
+      </p>
+    </header>
+
+    <app-home-branches-map [pageMode]="true" />
+  </div>
+</main>
